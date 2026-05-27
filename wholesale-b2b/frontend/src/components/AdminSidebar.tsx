@@ -4,13 +4,18 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { LayoutDashboard, Package, Grid, Image as ImageIcon, Settings, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Package, Grid, Image as ImageIcon, Settings, LogOut, X, FileText, Link as LinkIcon, List, Users, Sliders } from 'lucide-react';
 
 const sidebarLinks = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Products', href: '/admin/products', icon: Package },
   { name: 'Categories', href: '/admin/categories', icon: Grid },
   { name: 'Banners', href: '/admin/banners', icon: ImageIcon },
+  { name: 'CMS Pages', href: '/admin/pages', icon: FileText },
+  { name: 'Navbar Links', href: '/admin/navbar', icon: LinkIcon },
+  { name: 'Footer Links', href: '/admin/footer', icon: List },
+  { name: 'Wholesale Leads', href: '/admin/leads', icon: Users },
+  { name: 'Popup Settings', href: '/admin/popup-settings', icon: Sliders },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
@@ -48,7 +53,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               href={link.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-semibold ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-md'
+                  ? 'bg-[#cc3a07] text-white shadow-md'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
               }`}
               onClick={() => {
@@ -70,9 +75,8 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         <button
           onClick={() => {
             logout();
-            localStorage.removeItem('admin-auth');
-            localStorage.removeItem('token');
-            router.push('/admin/login');
+            localStorage.removeItem("adminToken");
+            window.location.href = "/admin/login";
             onClose();
           }}
           className="flex items-center gap-3 w-full px-4 py-2.5 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition font-semibold text-sm"

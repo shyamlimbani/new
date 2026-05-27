@@ -14,6 +14,13 @@ export interface ISettings extends Document {
     twitter?: string;
     linkedin?: string;
   };
+  searchPlaceholder?: string;
+  navbarBgColor?: string;
+  navbarTextColor?: string;
+  headerSpacingY?: string;
+  footerDescription?: string;
+  contactEmail?: string;
+  contactAddress?: string;
 }
 
 const settingsSchema = new Schema<ISettings>(
@@ -47,6 +54,31 @@ const settingsSchema = new Schema<ISettings>(
       instagram: { type: String },
       twitter: { type: String },
       linkedin: { type: String },
+    },
+    searchPlaceholder: {
+      type: String,
+      default: 'Search For items...',
+    },
+    navbarBgColor: {
+      type: String,
+      default: '#ffffff', // white
+    },
+    navbarTextColor: {
+      type: String,
+      default: '#1f2937', // gray-800
+    },
+    headerSpacingY: {
+      type: String,
+      default: '4', // py-4 equivalent
+    },
+    footerDescription: {
+      type: String,
+    },
+    contactEmail: {
+      type: String,
+    },
+    contactAddress: {
+      type: String,
     },
   },
   {

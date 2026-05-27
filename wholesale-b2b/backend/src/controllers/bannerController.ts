@@ -24,19 +24,15 @@ export const getBannerById = asyncWrapper(async (req: Request, res: Response) =>
 });
 
 export const createBanner = asyncWrapper(async (req: Request, res: Response) => {
-  const { title, link, order, isActive } = req.body;
+  const { image, link, order, isActive } = req.body;
 
-  let imageUrl = '';
-  if (req.file) {
-    imageUrl = await uploadToCloudinary(req.file.buffer, 'banners');
-  } else {
+  if (!image) {
     res.status(400);
-    throw new Error('Please upload a banner image');
+    throw new Error('Please provide a banner image URL');
   }
 
   const banner = new Banner({
-    title,
-    image: imageUrl,
+    image,
     link,
     order: Number(order) || 0,
     isActive: isActive === 'true' || isActive === true,
@@ -47,19 +43,15 @@ export const createBanner = asyncWrapper(async (req: Request, res: Response) => 
 });
 
 export const updateBanner = asyncWrapper(async (req: Request, res: Response) => {
-  const { title, link, order, isActive } = req.body;
+  const { image, link, order, isActive } = req.body;
 
   const banner = await Banner.findById(req.params.id);
 
   if (banner) {
-    banner.title = title || banner.title;
+    banner.image = image || banner.image;
     banner.link = link !== undefined ? link : banner.link;
     banner.order = order !== undefined ? Number(order) : banner.order;
     banner.isActive = isActive !== undefined ? (isActive === 'true' || isActive === true) : banner.isActive;
-
-    if (req.file) {
-      banner.image = await uploadToCloudinary(req.file.buffer, 'banners');
-    }
 
     const updatedBanner = await banner.save();
     res.json(updatedBanner);

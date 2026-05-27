@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings } from '@/types';
 import { SettingsService } from '@/services/apiService';
 import { useSettings } from '@/context/SettingsContext';
-import { Save, Loader2, ShieldCheck, Globe, Share2, Info } from 'lucide-react';
+import { Save, Loader2, ShieldCheck, Globe, Share2, Info, LayoutTemplate } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminSettings() {
@@ -18,6 +18,9 @@ export default function AdminSettings() {
   const [websiteName, setWebsiteName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [footerText, setFooterText] = useState('');
+  const [footerDescription, setFooterDescription] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactAddress, setContactAddress] = useState('');
   
   // SEO
   const [seoTitle, setSeoTitle] = useState('');
@@ -28,6 +31,12 @@ export default function AdminSettings() {
   const [instagram, setInstagram] = useState('');
   const [twitter, setTwitter] = useState('');
   const [linkedin, setLinkedin] = useState('');
+
+  // Header Customization
+  const [searchPlaceholder, setSearchPlaceholder] = useState('');
+  const [navbarBgColor, setNavbarBgColor] = useState('#1e293b');
+  const [navbarTextColor, setNavbarTextColor] = useState('#ffffff');
+  const [headerSpacingY, setHeaderSpacingY] = useState('4');
 
   // Logo files
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -44,6 +53,9 @@ export default function AdminSettings() {
           setWebsiteName(data.websiteName || '');
           setWhatsappNumber(data.whatsappNumber || '');
           setFooterText(data.footerText || '');
+          setFooterDescription(data.footerDescription || '');
+          setContactEmail(data.contactEmail || '');
+          setContactAddress(data.contactAddress || '');
           setSeoTitle(data.seoTitle || '');
           setSeoDescription(data.seoDescription || '');
           setLogoUrl(data.logo || '');
@@ -55,6 +67,11 @@ export default function AdminSettings() {
             setTwitter(data.socialLinks.twitter || '');
             setLinkedin(data.socialLinks.linkedin || '');
           }
+          
+          setSearchPlaceholder(data.searchPlaceholder || 'Search premium products, verified suppliers...');
+          setNavbarBgColor(data.navbarBgColor || '#1e293b');
+          setNavbarTextColor(data.navbarTextColor || '#ffffff');
+          setHeaderSpacingY(data.headerSpacingY || '4');
         }
       } catch (err) {
         console.error('Failed to load settings', err);
@@ -75,11 +92,19 @@ export default function AdminSettings() {
     formData.append('websiteName', websiteName);
     formData.append('whatsappNumber', whatsappNumber);
     formData.append('footerText', footerText);
+    formData.append('footerDescription', footerDescription);
+    formData.append('contactEmail', contactEmail);
+    formData.append('contactAddress', contactAddress);
     formData.append('seoTitle', seoTitle);
     formData.append('seoDescription', seoDescription);
     
     const socialLinks = { facebook, instagram, twitter, linkedin };
     formData.append('socialLinks', JSON.stringify(socialLinks));
+
+    formData.append('searchPlaceholder', searchPlaceholder);
+    formData.append('navbarBgColor', navbarBgColor);
+    formData.append('navbarTextColor', navbarTextColor);
+    formData.append('headerSpacingY', headerSpacingY);
 
     if (logoFile) {
       formData.append('logo', logoFile);
@@ -224,6 +249,40 @@ export default function AdminSettings() {
               placeholder="e.g. © 2026 Wholesale India Inc. All rights reserved."
             />
           </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">Footer Description Summary</label>
+            <textarea
+              rows={2}
+              value={footerDescription}
+              onChange={(e) => setFooterDescription(e.target.value)}
+              className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Provide a B2B description summary for the footer..."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">Support Email Address</label>
+              <input
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. support@wholesaleb2b.com"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">Registered Postal Address</label>
+              <input
+                type="text"
+                value={contactAddress}
+                onChange={(e) => setContactAddress(e.target.value)}
+                className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. Noida, Sector 62, Uttar Pradesh, India"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Card 2: SEO Meta */}
@@ -303,6 +362,75 @@ export default function AdminSettings() {
                 className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://linkedin.com/company/my-page"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Header & Layout Customization */}
+        <div className="bg-white rounded-2xl border border-gray-150 p-6 shadow-xs space-y-4">
+          <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b pb-2">
+            <LayoutTemplate className="w-4.5 h-4.5 text-blue-600" />
+            Header & Layout Settings
+          </h2>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">Search Bar Placeholder</label>
+            <input
+              type="text"
+              value={searchPlaceholder}
+              onChange={(e) => setSearchPlaceholder(e.target.value)}
+              className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Search premium products, verified suppliers..."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">Navbar Background Color</label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="color"
+                  value={navbarBgColor}
+                  onChange={(e) => setNavbarBgColor(e.target.value)}
+                  className="h-10 w-10 border rounded-lg cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={navbarBgColor}
+                  onChange={(e) => setNavbarBgColor(e.target.value)}
+                  className="flex-1 px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">Navbar Text Color</label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="color"
+                  value={navbarTextColor}
+                  onChange={(e) => setNavbarTextColor(e.target.value)}
+                  className="h-10 w-10 border rounded-lg cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={navbarTextColor}
+                  onChange={(e) => setNavbarTextColor(e.target.value)}
+                  className="flex-1 px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">Header Top Spacing</label>
+              <select
+                value={headerSpacingY}
+                onChange={(e) => setHeaderSpacingY(e.target.value)}
+                className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="2">Small (py-2)</option>
+                <option value="4">Medium (py-4)</option>
+                <option value="6">Large (py-6)</option>
+                <option value="8">Extra Large (py-8)</option>
+              </select>
             </div>
           </div>
         </div>

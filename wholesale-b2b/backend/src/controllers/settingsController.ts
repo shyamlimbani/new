@@ -13,6 +13,9 @@ export const getSettings = asyncWrapper(async (req: Request, res: Response) => {
       seoTitle: 'B2B Wholesale Marketplace - Sourcing Products Globally',
       seoDescription: 'Find global manufacturers, suppliers, exporters, and importers on our premium B2B wholesale marketplace.',
       footerText: '© 2026 B2B Wholesale Marketplace. All rights reserved.',
+      footerDescription: 'Connecting wholesale B2B buyers with verified manufacturers and direct suppliers globally. Simplify your bulk sourcing process.',
+      contactEmail: 'info@indib2bwholesale.com',
+      contactAddress: 'Industrial Sector 62, Noida, Uttar Pradesh, India',
       socialLinks: {
         facebook: 'https://facebook.com',
         instagram: 'https://instagram.com',
@@ -34,6 +37,9 @@ export const updateSettings = asyncWrapper(async (req: Request, res: Response) =
     seoTitle,
     seoDescription,
     footerText,
+    footerDescription,
+    contactEmail,
+    contactAddress,
     facebook,
     instagram,
     twitter,
@@ -53,6 +59,9 @@ export const updateSettings = asyncWrapper(async (req: Request, res: Response) =
   settings.seoTitle = seoTitle !== undefined ? seoTitle : settings.seoTitle;
   settings.seoDescription = seoDescription !== undefined ? seoDescription : settings.seoDescription;
   settings.footerText = footerText !== undefined ? footerText : settings.footerText;
+  settings.footerDescription = footerDescription !== undefined ? footerDescription : settings.footerDescription;
+  settings.contactEmail = contactEmail !== undefined ? contactEmail : settings.contactEmail;
+  settings.contactAddress = contactAddress !== undefined ? contactAddress : settings.contactAddress;
 
   if (logo !== undefined) {
     settings.logo = logo;

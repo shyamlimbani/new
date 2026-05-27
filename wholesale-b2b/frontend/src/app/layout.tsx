@@ -18,6 +18,8 @@ export const metadata: Metadata = {
 };
 
 import { SettingsProvider } from "@/context/SettingsContext";
+import LeadCapturePopup from "@/components/LeadCapturePopup";
+import { Toaster } from "react-hot-toast";
 
 export default function RootLayout({
   children,
@@ -31,7 +33,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SettingsProvider>
+          <Toaster position="top-center" />
           {children}
+          <LeadCapturePopup />
         </SettingsProvider>
       </body>
     </html>

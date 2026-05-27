@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IBanner extends Document {
-  title: string;
   image: string;
   link?: string;
   order: number;
@@ -10,13 +9,8 @@ export interface IBanner extends Document {
 
 const bannerSchema = new Schema<IBanner>(
   {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
     image: {
-      type: String, // Cloudinary URL
+      type: String, 
       required: true,
     },
     link: {

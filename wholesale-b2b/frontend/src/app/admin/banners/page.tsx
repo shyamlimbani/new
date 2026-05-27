@@ -16,11 +16,9 @@ export default function AdminBanners() {
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
 
   // Form states
-  const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
   const [active, setActive] = useState(true);
   const [order, setOrder] = useState(0);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -43,11 +41,9 @@ export default function AdminBanners() {
 
   const openAddModal = () => {
     setEditingBanner(null);
-    setTitle('');
     setLink('');
     setActive(true);
     setOrder(0);
-    setImageFile(null);
     setImageUrl('');
     setErrorMsg('');
     setIsModalOpen(true);
@@ -55,11 +51,9 @@ export default function AdminBanners() {
 
   const openEditModal = (b: Banner) => {
     setEditingBanner(b);
-    setTitle(b.title);
     setLink(b.link || '');
     setActive(b.isActive);
     setOrder(b.order);
-    setImageFile(null);
     setImageUrl(b.image || '');
     setErrorMsg('');
     setIsModalOpen(true);
@@ -70,20 +64,18 @@ export default function AdminBanners() {
     setErrorMsg('');
     setSubmitting(true);
 
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('link', link);
-    formData.append('isActive', String(active));
-    formData.append('order', String(order));
-    if (imageFile) {
-      formData.append('image', imageFile);
-    }
+    const payload = {
+      image: imageUrl,
+      link,
+      isActive: active,
+      order,
+    };
 
     try {
       if (editingBanner) {
-        await BannerService.update(editingBanner._id, formData);
+        await BannerService.update(editingBanner._id, payload as any);
       } else {
-        await BannerService.create(formData);
+        await BannerService.create(payload as any);
       }
       setIsModalOpen(false);
       loadBanners();
@@ -105,9 +97,7 @@ export default function AdminBanners() {
     }
   };
 
-  const filteredBanners = banners.filter((b) =>
-    b.title.toLowerCase().includes(searchVal.toLowerCase())
-  );
+  const filteredBanners = banners;
 
   return (
     <div className="space-y-6">
@@ -153,7 +143,6 @@ export default function AdminBanners() {
               <thead>
                 <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-extrabold border-b border-gray-150">
                   <th className="px-6 py-4">Preview</th>
-                  <th className="px-6 py-4">Banner Title</th>
                   <th className="px-6 py-4">Destination Link</th>
                   <th className="px-6 py-4">Order</th>
                   <th className="px-6 py-4">Status</th>
@@ -165,15 +154,12 @@ export default function AdminBanners() {
                   <tr key={b._id} className="hover:bg-gray-55/50">
                     <td className="px-6 py-4">
                       <div className="w-24 h-12 bg-gray-50 border rounded-lg overflow-hidden flex items-center justify-center p-1">
-                        {b.image ? (
-                          <img src={getImageUrl(b.image)} alt="" className="max-h-full max-w-full object-cover" />
-                        ) : (
-                          <span className="text-gray-300 text-[10px]">No Banner</span>
-                        )}
+                        <img
+                          src={b.image ? getImageUrl(b.image) : "/placeholder.png"}
+                          alt="Banner"
+                          className="max-h-full max-w-full object-cover"
+                        />
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-gray-800">{b.title}</div>
                     </td>
                     <td className="px-6 py-4 text-gray-500 font-mono text-xs max-w-[200px] truncate">
                       {b.link || 'None'}
@@ -257,17 +243,22 @@ export default function AdminBanners() {
                 </div>
               )}
 
-              {/* Title */}
+              {/* Image URL */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">Banner Caption Title*</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">Banner Image URL*</label>
                 <input
                   type="text"
                   required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
                   className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g. Sourced Direct from Manufacturers"
+                  placeholder="https://example.com/image.jpg"
                 />
+                {imageUrl && (
+                  <div className="mt-3 relative w-full h-32 border rounded-lg overflow-hidden flex items-center justify-center bg-gray-50">
+                    <img src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
 
               {/* Destination URL */}
@@ -308,21 +299,7 @@ export default function AdminBanners() {
                 </div>
               </div>
 
-              {/* Image upload */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">Upload Banner Slide Image*</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
-                  className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                {imageUrl && !imageFile && (
-                  <div className="mt-3 relative w-full h-24 border rounded-lg overflow-hidden flex items-center justify-center bg-gray-55">
-                    <img src={getImageUrl(imageUrl)} alt="" className="w-full h-full object-cover" />
-                  </div>
-                )}
-              </div>
+
 
               {/* Footer */}
               <div className="pt-6 border-t flex justify-end gap-3 shrink-0">

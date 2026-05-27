@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useSettings } from '../context/SettingsContext';
-import { MessageCircle } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa';
 
 interface WhatsAppButtonProps {
   phoneNumber?: string;
@@ -47,7 +47,7 @@ export default function WhatsAppButton({
       rel="noopener noreferrer"
       className={`inline-flex items-center justify-center gap-2 bg-[#25d366] text-white hover:bg-[#20ba5a] px-4 py-2.5 rounded-lg font-semibold shadow-md transition-colors ${className}`}
     >
-      <MessageCircle className="w-5 h-5 fill-current" />
+      <FaWhatsapp className="w-5 h-5 fill-current" />
       <span>Send WhatsApp Inquiry</span>
     </a>
   );

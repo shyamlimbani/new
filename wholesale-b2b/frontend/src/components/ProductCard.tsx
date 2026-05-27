@@ -1,98 +1,112 @@
 'use client';
 
 import React from 'react';
-import { Product } from '../types';
 import Link from 'next/link';
-import { Eye, MessageCircle } from 'lucide-react';
-import WhatsAppButton from './WhatsAppButton';
-import Image from 'next/image';
-import { getImageUrl } from '@/lib/imageHelper';
+import { Product, Category } from '@/types';
+import { useSettings } from '@/context/SettingsContext';
+import { FaWhatsapp } from 'react-icons/fa';
 
 interface ProductCardProps {
   product: Product;
-  onQuickView: (product: Product) => void;
+  category?: Category;
 }
 
-export default function ProductCard({ product, onQuickView }: ProductCardProps) {
-  const whatsappMessage = `Hello, I am interested in your product: "${product.title}" (${product.price || 'Price on request'}). Please provide more details.`;
-  
-  // Use product.image or product.images[0] as primary image URL
-  const primaryImage = product.image || (product.images && product.images[0]);
+/** Derives a display-safe stock label from numeric quantity */
+function getStockLabel(qty?: number): { label: string; color: string } {
+  if (qty === undefined || qty === null) {
+    return { label: 'In Stock', color: 'text-gray-400' };
+  }
+  if (qty === 0) return { label: 'Out of Stock', color: 'text-red-400' };
+  if (qty <= 10) return { label: 'Limited Stock', color: 'text-amber-500' };
+  return { label: 'In Stock', color: 'text-gray-400' };
+}
+
+export default function ProductCard({ product }: ProductCardProps) {
+  const { settings } = useSettings();
+
+  // WhatsApp number priority: product-level → global settings fallback
+  const rawNumber =
+    product.whatsapp?.replace(/\D/g, '') ||
+    settings?.whatsappNumber?.replace(/\D/g, '') ||
+    '';
+
+  const priceFormatted = `₹${product.price.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+  const waMessage = encodeURIComponent(
+    `Hello, I am interested in ${product.name} - ${priceFormatted}`
+  );
+
+  const whatsappUrl = rawNumber
+    ? `https://wa.me/${rawNumber}?text=${waMessage}`
+    : '#';
+
+  const { label: stockLabel, color: stockColor } = getStockLabel(
+    product.stockQuantity
+  );
 
   return (
-    <div className="group bg-white rounded-2xl border border-slate-100/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full overflow-hidden">
-      {/* Image Container with Hover Effects */}
-      <div className="relative pt-[80%] bg-slate-50/50 overflow-hidden shrink-0">
-        <Link href={`/products/${product._id}`} className="absolute inset-0 flex items-center justify-center p-4">
-          {primaryImage ? (
-            <Image
-              src={getImageUrl(primaryImage)}
-              alt={product.title}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-              className="object-contain p-4 group-hover:scale-[1.03] transition-transform duration-300 ease-out"
-            />
-          ) : (
-            <div className="text-slate-400 text-xs font-medium tracking-wide">No Image Available</div>
-          )}
-        </Link>
+    <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-[0_6px_24px_rgba(204,58,7,0.10)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col overflow-hidden">
+      
+      {/* ── Image Section ── */}
+      <Link href={`/products/${product._id}`} className="block p-4 pb-0">
+        <div className="relative bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center"
+          style={{ aspectRatio: '1 / 1' }}>
+          <img
+            src={product.image || '/placeholder.png'}
+            alt={product.name}
+            className="w-full h-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => (e.currentTarget.src = '/placeholder.png')}
+          />
+        </div>
+      </Link>
 
-        {/* Quick View Hover overlay */}
-        <button
-          onClick={() => onQuickView(product)}
-          className="absolute bottom-3 right-3 p-2 bg-white/95 hover:bg-blue-650 text-slate-700 hover:text-white rounded-xl shadow-xs transition-all opacity-0 group-hover:opacity-100 duration-300 md:block hidden border border-slate-100 backdrop-blur-xs hover:scale-105"
-          title="Quick View"
+      {/* ── WhatsApp Button (floating, centered, below image) ── */}
+      <div className="flex justify-center -mt-5 relative z-10">
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`Inquire about ${product.name}`}
+          className={`
+            w-10 h-10 rounded-full flex items-center justify-center
+            bg-[#25d366] border border-[#25d366] shadow-md
+            hover:scale-110 hover:shadow-lg active:scale-95
+            transition-all duration-200
+            ${!rawNumber ? 'opacity-50 pointer-events-none' : ''}
+          `}
         >
-          <Eye className="w-3.5 h-3.5" />
-        </button>
-
-        {/* Quick View Button for Mobile */}
-        <button
-          onClick={() => onQuickView(product)}
-          className="absolute top-2 right-2 p-1.5 bg-white/95 text-slate-705 rounded-lg shadow-xs md:hidden border border-slate-100"
-        >
-          <Eye className="w-3.5 h-3.5" />
-        </button>
+          <FaWhatsapp className="w-5 h-5 text-white" />
+        </a>
       </div>
 
-      {/* Product Info */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div>
-          {/* Title */}
-          <Link href={`/products/${product._id}`} className="block">
-            <h3 className="text-xs sm:text-sm font-semibold text-slate-800 group-hover:text-blue-650 line-clamp-2 leading-snug mb-1.5 transition-colors">
-              {product.title}
-            </h3>
-          </Link>
+      {/* ── Card Content ── */}
+      <div className="px-4 pt-2 pb-4 flex flex-col items-center text-center gap-1.5 flex-1">
+        
+        {/* Stock Status */}
+        <p className={`text-[11px] font-medium tracking-wide ${stockColor} leading-none`}>
+          {stockLabel}
+          {product.piecesPerCarton && (
+            <span className="text-gray-300 mx-1">|</span>
+          )}
+          {product.piecesPerCarton && (
+            <span className="text-gray-400">{product.piecesPerCarton}</span>
+          )}
+        </p>
 
-          {/* Price */}
-          <div className="text-sm sm:text-base font-bold text-blue-600 mb-1">
-            {product.price || 'Get Latest Price'}
-          </div>
+        {/* Product Title */}
+        <Link href={`/products/${product._id}`} className="w-full">
+          <h3 className="text-[13.5px] font-semibold text-gray-800 leading-snug line-clamp-2 hover:text-[#cc3a07] transition-colors duration-200">
+            {product.name}
+          </h3>
+        </Link>
 
-          {/* Short Description */}
-          <p className="text-[11px] text-slate-500 line-clamp-2 mb-4 leading-relaxed font-normal">
-            {product.shortDescription}
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="mt-auto flex flex-col gap-2 pt-3 border-t border-slate-100/80">
-          <WhatsAppButton
-            message={whatsappMessage}
-            className="w-full text-xs font-semibold py-2.5 bg-[#25d366] hover:bg-[#20ba5a] text-white flex items-center justify-center gap-1.5 rounded-xl shadow-xs transition-all duration-200 hover:shadow-sm hover:scale-[1.01]"
-          >
-            <MessageCircle className="w-3.5 h-3.5 fill-current" />
-            <span>Contact Supplier</span>
-          </WhatsAppButton>
-
-          <Link
-            href={`/products/${product._id}`}
-            className="w-full text-center text-xs font-semibold py-2.5 bg-slate-50 hover:bg-blue-50/50 text-slate-600 hover:text-blue-600 border border-slate-100/60 hover:border-blue-100/40 rounded-xl transition-all duration-200"
-          >
-            View Details
-          </Link>
-        </div>
+        {/* Price */}
+        <p className="text-base font-bold text-[#cc3a07] tracking-tight mt-0.5">
+          {priceFormatted}
+        </p>
       </div>
     </div>
   );

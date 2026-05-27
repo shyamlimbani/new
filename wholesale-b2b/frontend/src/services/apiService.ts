@@ -1,5 +1,5 @@
 import api from '../lib/api';
-import { Product, Category, Banner, Settings, AdminStats } from '../types';
+import { Product, Category, Banner, Settings, AdminStats, Page, NavbarLink, FooterMenu, Lead, PopupSetting } from '../types';
 
 // ==========================================
 // MOCK DATA FOR DEMO & FALLBACK
@@ -43,135 +43,10 @@ const MOCK_CATEGORIES: Category[] = [
   },
 ];
 
-const MOCK_PRODUCTS: Product[] = [
-  {
-    _id: 'prod-1',
-    title: 'High Precision CNC Lathe Machine CK6150',
-    slug: 'precision-cnc-lathe-machine',
-    price: '₹3,50,000 / Unit',
-    shortDescription: 'Industrial-grade CNC lathe machine for high precision metal turnings and shaft machining.',
-    description: 'High efficiency CNC lathe machine with horizontal bed. Features advanced Fanuc or GSK control system. Perfect for metal turnings, shaft machining, and industrial component manufacturers. Includes auto-lubrication system and high-torque spindle.',
-    category: 'cat-1',
-    images: [
-      'https://images.unsplash.com/photo-1537462715879-360eeb61a0bc?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'
-    ],
-    specifications: [
-      { key: 'Control System', value: 'GSK980TDi / Fanuc' },
-      { key: 'Max Bed Swing', value: '500mm' },
-      { key: 'Spindle Speed', value: '150-2000 rpm' },
-      { key: 'Motor Power', value: '7.5 kW' }
-    ],
-    features: ['High-rigidity cast iron bed', 'Automatic 4-station tool post', 'Fully enclosed guarding for operator safety'],
-    tags: ['CNC', 'Lathe', 'Machinery', 'Metalworking'],
-    isFeatured: true,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    _id: 'prod-2',
-    title: 'Premium 100% Organic Cotton Yarn',
-    slug: 'organic-cotton-yarn',
-    price: '₹250 / Kg',
-    shortDescription: 'Combed organic cotton yarn for high-quality weaving and knitting.',
-    description: 'High quality 100% organic cotton yarn. Available in counts 20s to 40s. Certified by GOTS. Ideal for weaving high-end bedsheets, t-shirts, and apparel fabrics. Extremely soft texture and high dye affinity.',
-    category: 'cat-2',
-    images: [
-      'https://images.unsplash.com/photo-1558271821-65ab9014453a?w=800&auto=format&fit=crop&q=80'
-    ],
-    specifications: [
-      { key: 'Composition', value: '100% Cotton' },
-      { key: 'Count Range', value: '20s - 40s' },
-      { key: 'Type', value: 'Combed & Carded' },
-      { key: 'Certification', value: 'GOTS Certified' }
-    ],
-    features: ['Eco-friendly organic cotton', 'High tensile strength for high-speed looms', 'Soft skin feel with minimal hairiness'],
-    tags: ['Cotton', 'Yarn', 'Textile', 'Organic'],
-    isFeatured: true,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    _id: 'prod-3',
-    title: 'Mono Perc Half-Cut Solar Panel 550W',
-    slug: 'mono-perc-solar-panel-550w',
-    price: '₹18,500 / Piece',
-    shortDescription: 'A-grade Mono Perc Half-Cell solar panels for commercial and industrial installations.',
-    description: 'Tier-1 high efficiency solar panel. Monocrystalline silicon cells with half-cut technology. Excellent performance under low light conditions with high durability against wind and snow loads. 25-year performance warranty included.',
-    category: 'cat-3',
-    images: [
-      'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80'
-    ],
-    specifications: [
-      { key: 'Peak Power', value: '550W' },
-      { key: 'Cell Type', value: 'Monocrystalline' },
-      { key: 'Module Efficiency', value: '21.3%' },
-      { key: 'Warranty', value: '25 Years Linear Performance' }
-    ],
-    features: ['Anti-reflective glass coating', 'IP68 junction box with bypass diodes', 'PID resistant cells'],
-    tags: ['Solar', 'Green Energy', 'Electrical', 'Power Panel'],
-    isFeatured: true,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    _id: 'prod-4',
-    title: 'Automatic Bottle Liquid Filling Machine',
-    slug: 'automatic-liquid-filling-machine',
-    price: '₹4,20,000 / Unit',
-    shortDescription: '4-Nozzle linear volumetric liquid filling machine for PET/Glass bottles.',
-    description: 'Fully automatic liquid filling machine suitable for pharmaceuticals, juice, water, oils, and chemical bottles. Volumetric piston filling mechanism guarantees ±1% filling accuracy. Simple adjustment for different bottle sizes.',
-    category: 'cat-1',
-    images: [
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80'
-    ],
-    specifications: [
-      { key: 'Nozzles', value: '4 Heads (Customizable to 6/8)' },
-      { key: 'Filling Range', value: '50ml - 1000ml' },
-      { key: 'Speed', value: '30-40 Bottles/min' },
-      { key: 'Material', value: 'Stainless Steel 316 / 304' }
-    ],
-    features: ['No Bottle No Fill smart mechanism', 'PLC controlled with touch-screen HMI', 'Drip-free pneumatic shutoff nozzles'],
-    tags: ['Filling Machine', 'Packaging', 'Industrial'],
-    isFeatured: false,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    _id: 'prod-5',
-    title: 'Disposable Syringes 3ml with Needle',
-    slug: 'disposable-syringes-3ml',
-    price: '₹1.80 / Piece',
-    shortDescription: 'Bulk sterile medical grade disposable syringes with needles.',
-    description: 'Sterilized using EO gas. Highly transparent barrel for easy visual inspection of flow. Double-contact gasket reduces plunger friction and leakage. Safe, medical-grade materials for hospital and clinical usage.',
-    category: 'cat-5',
-    images: [
-      'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop&q=80'
-    ],
-    specifications: [
-      { key: 'Capacity', value: '3 ml' },
-      { key: 'Sterilization', value: 'EO Gas Sterile' },
-      { key: 'Needle Size', value: '23G (Included)' },
-      { key: 'Box Quantity', value: '100 Units/Box' }
-    ],
-    features: ['Non-toxic & Pyrogen free', 'Luer lock connector for safety', 'CE & ISO 13485 certified'],
-    tags: ['Syringe', 'Medical', 'Surgical', 'Disposable'],
-    isFeatured: false,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
 
 const MOCK_BANNERS: Banner[] = [
   {
     _id: 'ban-1',
-    title: 'Heavy Duty Industrial Machinery & Components',
     image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1600&auto=format&fit=crop&q=80',
     link: '/?category=industrial-machinery',
     order: 1,
@@ -179,7 +54,6 @@ const MOCK_BANNERS: Banner[] = [
   },
   {
     _id: 'ban-2',
-    title: 'Bulk Textile & Apparel Raw Materials',
     image: 'https://images.unsplash.com/photo-1558271821-65ab9014453a?w=1600&auto=format&fit=crop&q=80',
     link: '/?category=textiles-garments',
     order: 2,
@@ -187,7 +61,6 @@ const MOCK_BANNERS: Banner[] = [
   },
   {
     _id: 'ban-3',
-    title: 'High Efficiency Solar & Green Energy Products',
     image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1600&auto=format&fit=crop&q=80',
     link: '/?category=electronics-electrical',
     order: 3,
@@ -203,19 +76,26 @@ const MOCK_SETTINGS: Settings = {
   seoTitle: 'IndiB2B Marketplace - Find Suppliers & Manufacturers',
   seoDescription: 'Connecting wholesale buyers with verified B2B suppliers, manufacturers, exporters, and logistics providers.',
   footerText: '© 2026 IndiB2B Wholesale Inc. All rights reserved. Made for wholesale business transactions.',
+  footerDescription: 'Connecting wholesale B2B buyers with verified manufacturers and direct suppliers globally. Simplify your bulk sourcing process.',
+  contactEmail: 'info@indib2bwholesale.com',
+  contactAddress: 'Industrial Sector 62, Noida, Uttar Pradesh, India',
   socialLinks: {
     facebook: 'https://facebook.com',
     instagram: 'https://instagram.com',
     twitter: 'https://twitter.com',
     linkedin: 'https://linkedin.com',
   },
+  searchPlaceholder: 'Search For items...',
+  navbarBgColor: '#ffffff',
+  navbarTextColor: '#1f2937',
+  headerSpacingY: '4',
 };
 
 // ==========================================
 // CLIENT STATE (IN-MEMORY PERSISTENCE FOR DEMO)
 // ==========================================
 
-let localProducts: Product[] = [];
+
 let localCategories: Category[] = [];
 let localBanners: Banner[] = [];
 let localSettings: Settings = { ...MOCK_SETTINGS };
@@ -223,12 +103,12 @@ let localSettings: Settings = { ...MOCK_SETTINGS };
 const loadLocalState = () => {
   if (typeof window === 'undefined') return;
   
-  const products = localStorage.getItem('local_products');
+
   const categories = localStorage.getItem('local_categories');
   const banners = localStorage.getItem('local_banners');
   const settings = localStorage.getItem('local_settings');
 
-  localProducts = products ? JSON.parse(products) : [...MOCK_PRODUCTS];
+
   localCategories = categories ? JSON.parse(categories) : [...MOCK_CATEGORIES];
   localBanners = banners ? JSON.parse(banners) : [...MOCK_BANNERS];
   localSettings = settings ? JSON.parse(settings) : { ...MOCK_SETTINGS };
@@ -236,7 +116,7 @@ const loadLocalState = () => {
 
 const saveLocalState = () => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('local_products', JSON.stringify(localProducts));
+
   localStorage.setItem('local_categories', JSON.stringify(localCategories));
   localStorage.setItem('local_banners', JSON.stringify(localBanners));
   localStorage.setItem('local_settings', JSON.stringify(localSettings));
@@ -343,156 +223,7 @@ export const CategoryService = {
   },
 };
 
-export const ProductService = {
-  getAll: async (params?: { category?: string; search?: string }): Promise<Product[]> => {
-    try {
-      const { data } = await api.get('/products', { params });
-      
-      const productsList = data.products ? data.products : data;
 
-      if (!productsList || !Array.isArray(productsList) || productsList.length === 0) {
-        return ProductService.filterLocal(params);
-      }
-      return productsList;
-    } catch (e) {
-      console.warn('Product fetch error, falling back to mock:', e);
-      return ProductService.filterLocal(params);
-    }
-  },
-
-  filterLocal: (params?: { category?: string; search?: string }): Product[] => {
-    let result = [...localProducts];
-    if (params?.category) {
-      // Can be category ID or slug
-      const cat = localCategories.find(c => c._id === params.category || c.slug === params.category);
-      if (cat) {
-        result = result.filter((p) => p.category === cat._id || p.category === cat.slug);
-      }
-    }
-    if (params?.search) {
-      const s = params.search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(s) ||
-          p.shortDescription.toLowerCase().includes(s) ||
-          p.description.toLowerCase().includes(s)
-      );
-    }
-    return result;
-  },
-
-  getById: async (id: string): Promise<Product> => {
-    try {
-      const { data } = await api.get(`/products/${id}`);
-      return data;
-    } catch (e) {
-      const found = localProducts.find((p) => p._id === id || p.slug === id);
-      if (found) return found;
-      throw e;
-    }
-  },
-
-  create: async (formData: FormData): Promise<Product> => {
-    try {
-      const { data } = await api.post('/products', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return data;
-    } catch (e) {
-      console.warn('Product create error, creating locally:', e);
-      const title = formData.get('title') as string;
-      const slug = formData.get('slug') as string || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const price = formData.get('price') as string;
-      const shortDescription = formData.get('shortDescription') as string;
-      const description = formData.get('description') as string;
-      const categoryId = formData.get('category') as string;
-      const specificationsRaw = formData.get('specifications') as string;
-      const featuresRaw = formData.get('features') as string;
-      const tagsRaw = formData.get('tags') as string;
-      const isFeatured = formData.get('isFeatured') === 'true';
-
-      const specs = specificationsRaw ? JSON.parse(specificationsRaw) : [];
-      const features = featuresRaw ? JSON.parse(featuresRaw) : [];
-      const tags = tagsRaw ? tagsRaw.split(',').map((t) => t.trim()) : [];
-
-      const newProd: Product = {
-        _id: `prod-${Date.now()}`,
-        title,
-        slug,
-        price,
-        shortDescription,
-        description,
-        category: categoryId,
-        images: [
-          'https://images.unsplash.com/photo-1537462715879-360eeb61a0bc?w=800&auto=format&fit=crop&q=80'
-        ],
-        specifications: specs,
-        features,
-        tags,
-        isFeatured,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      localProducts.push(newProd);
-      saveLocalState();
-      return newProd;
-    }
-  },
-
-  update: async (id: string, formData: FormData): Promise<Product> => {
-    try {
-      const { data } = await api.put(`/products/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return data;
-    } catch (e) {
-      console.warn('Product update error, updating locally:', e);
-      const index = localProducts.findIndex((p) => p._id === id);
-      if (index === -1) throw new Error('Product not found');
-
-      const title = formData.get('title') as string;
-      const slug = formData.get('slug') as string;
-      const price = formData.get('price') as string;
-      const shortDescription = formData.get('shortDescription') as string;
-      const description = formData.get('description') as string;
-      const categoryId = formData.get('category') as string;
-      const specificationsRaw = formData.get('specifications') as string;
-      const featuresRaw = formData.get('features') as string;
-      const tagsRaw = formData.get('tags') as string;
-      const isFeatured = formData.get('isFeatured') === 'true';
-
-      localProducts[index] = {
-        ...localProducts[index],
-        title: title || localProducts[index].title,
-        slug: slug || localProducts[index].slug,
-        price: price !== undefined ? price : localProducts[index].price,
-        shortDescription: shortDescription || localProducts[index].shortDescription,
-        description: description || localProducts[index].description,
-        category: categoryId || localProducts[index].category,
-        specifications: specificationsRaw ? JSON.parse(specificationsRaw) : localProducts[index].specifications,
-        features: featuresRaw ? JSON.parse(featuresRaw) : localProducts[index].features,
-        tags: tagsRaw ? tagsRaw.split(',').map((t) => t.trim()) : localProducts[index].tags,
-        isFeatured: isFeatured !== undefined ? isFeatured : localProducts[index].isFeatured,
-        updatedAt: new Date().toISOString(),
-      };
-
-      saveLocalState();
-      return localProducts[index];
-    }
-  },
-
-  delete: async (id: string): Promise<void> => {
-    try {
-      await api.delete(`/products/${id}`);
-    } catch (e) {
-      console.warn('Product delete error, deleting locally:', e);
-      localProducts = localProducts.filter((p) => p._id !== id);
-      saveLocalState();
-    }
-  },
-};
 
 export const BannerService = {
   getAll: async (params?: { active?: boolean }): Promise<Banner[]> => {
@@ -508,26 +239,18 @@ export const BannerService = {
     }
   },
 
-  create: async (formData: FormData): Promise<Banner> => {
+  create: async (payload: Partial<Banner>): Promise<Banner> => {
     try {
-      const { data } = await api.post('/banners', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data } = await api.post('/banners', payload);
       return data;
     } catch (e) {
       console.warn('Banner create error, creating locally:', e);
-      const title = formData.get('title') as string;
-      const link = formData.get('link') as string;
-      const order = Number(formData.get('order')) || 0;
-      const isActive = formData.get('isActive') === 'true';
-
       const newBan: Banner = {
         _id: `ban-${Date.now()}`,
-        title,
-        image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1600&auto=format&fit=crop&q=80',
-        link,
-        order,
-        isActive,
+        image: payload.image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1600&auto=format&fit=crop&q=80',
+        link: payload.link,
+        order: payload.order || 0,
+        isActive: payload.isActive ?? true,
       };
 
       localBanners.push(newBan);
@@ -537,28 +260,21 @@ export const BannerService = {
     }
   },
 
-  update: async (id: string, formData: FormData): Promise<Banner> => {
+  update: async (id: string, payload: Partial<Banner>): Promise<Banner> => {
     try {
-      const { data } = await api.put(`/banners/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data } = await api.put(`/banners/${id}`, payload);
       return data;
     } catch (e) {
       console.warn('Banner update error, updating locally:', e);
       const index = localBanners.findIndex((b) => b._id === id);
       if (index === -1) throw new Error('Banner not found');
 
-      const title = formData.get('title') as string;
-      const link = formData.get('link') as string;
-      const order = formData.get('order');
-      const isActive = formData.get('isActive');
-
       localBanners[index] = {
         ...localBanners[index],
-        title: title || localBanners[index].title,
-        link: link !== undefined ? link : localBanners[index].link,
-        order: order !== null ? Number(order) : localBanners[index].order,
-        isActive: isActive !== null ? (String(isActive) === 'true') : localBanners[index].isActive,
+        image: payload.image || localBanners[index].image,
+        link: payload.link !== undefined ? payload.link : localBanners[index].link,
+        order: payload.order !== undefined ? payload.order : localBanners[index].order,
+        isActive: payload.isActive !== undefined ? payload.isActive : localBanners[index].isActive,
       };
 
       localBanners.sort((a, b) => a.order - b.order);
@@ -604,6 +320,9 @@ export const SettingsService = {
       const seoTitle = formData.get('seoTitle') as string;
       const seoDescription = formData.get('seoDescription') as string;
       const footerText = formData.get('footerText') as string;
+      const footerDescription = formData.get('footerDescription') as string;
+      const contactEmail = formData.get('contactEmail') as string;
+      const contactAddress = formData.get('contactAddress') as string;
       const facebook = formData.get('facebook') as string;
       const instagram = formData.get('instagram') as string;
       const twitter = formData.get('twitter') as string;
@@ -639,12 +358,19 @@ export const SettingsService = {
         seoTitle: seoTitle !== undefined ? seoTitle : localSettings.seoTitle,
         seoDescription: seoDescription !== undefined ? seoDescription : localSettings.seoDescription,
         footerText: footerText !== undefined ? footerText : localSettings.footerText,
+        footerDescription: footerDescription !== undefined ? footerDescription : localSettings.footerDescription,
+        contactEmail: contactEmail !== undefined ? contactEmail : localSettings.contactEmail,
+        contactAddress: contactAddress !== undefined ? contactAddress : localSettings.contactAddress,
         socialLinks: {
           facebook: facebook !== undefined ? facebook : localSettings.socialLinks?.facebook,
           instagram: instagram !== undefined ? instagram : localSettings.socialLinks?.instagram,
           twitter: twitter !== undefined ? twitter : localSettings.socialLinks?.twitter,
           linkedin: linkedin !== undefined ? linkedin : localSettings.socialLinks?.linkedin,
         },
+        searchPlaceholder: formData.get('searchPlaceholder') as string || localSettings.searchPlaceholder,
+        navbarBgColor: formData.get('navbarBgColor') as string || localSettings.navbarBgColor,
+        navbarTextColor: formData.get('navbarTextColor') as string || localSettings.navbarTextColor,
+        headerSpacingY: formData.get('headerSpacingY') as string || localSettings.headerSpacingY,
       };
 
       saveLocalState();
@@ -669,11 +395,192 @@ export const AdminService = {
       };
     } catch (e) {
       return {
-        totalProducts: localProducts.length,
+        totalProducts: 0,
         totalCategories: localCategories.length,
         activeBanners: localBanners.filter((b) => b.isActive).length,
         pendingInquiries: 3,
       };
     }
+  },
+};
+
+export const ProductService = {
+  getAll: async (params?: { category?: string; search?: string }): Promise<Product[]> => {
+    try {
+      const { data } = await api.get('/products', { params });
+      return data;
+    } catch (e) {
+      return [];
+    }
+  },
+
+  getById: async (id: string): Promise<Product> => {
+    const { data } = await api.get(`/products/${id}`);
+    return data;
+  },
+
+  create: async (payload: Partial<Product>): Promise<Product> => {
+    const { data } = await api.post('/products', payload);
+    return data;
+  },
+
+  update: async (id: string, payload: Partial<Product>): Promise<Product> => {
+    const { data } = await api.put(`/products/${id}`, payload);
+    return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/products/${id}`);
+  },
+
+  exportCsvUrl: `${api.defaults.baseURL || '/api'}/products/export`,
+
+  importCsv: async (file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post('/products/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
+};
+
+export const PageService = {
+  getAll: async (params?: { active?: boolean }): Promise<Page[]> => {
+    try {
+      const { data } = await api.get('/pages', {
+        params: { active: params?.active ? 'true' : 'false' },
+      });
+      return data;
+    } catch (e) {
+      return [];
+    }
+  },
+
+  getBySlug: async (slug: string): Promise<Page> => {
+    const { data } = await api.get(`/pages/${slug}`);
+    return data;
+  },
+
+  create: async (payload: Partial<Page>): Promise<Page> => {
+    const { data } = await api.post('/pages', payload);
+    return data;
+  },
+
+  update: async (id: string, payload: Partial<Page>): Promise<Page> => {
+    const { data } = await api.put(`/pages/${id}`, payload);
+    return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/pages/${id}`);
+  },
+};
+
+export const NavbarService = {
+  getAll: async (params?: { active?: boolean }): Promise<NavbarLink[]> => {
+    try {
+      const { data } = await api.get('/navbar', {
+        params: { active: params?.active ? 'true' : 'false' },
+      });
+      return data;
+    } catch (e) {
+      return [];
+    }
+  },
+
+  create: async (payload: Partial<NavbarLink>): Promise<NavbarLink> => {
+    const { data } = await api.post('/navbar', payload);
+    return data;
+  },
+
+  update: async (id: string, payload: Partial<NavbarLink>): Promise<NavbarLink> => {
+    const { data } = await api.put(`/navbar/${id}`, payload);
+    return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/navbar/${id}`);
+  },
+};
+
+export const FooterMenuService = {
+  getAll: async (params?: { active?: boolean }): Promise<FooterMenu[]> => {
+    try {
+      const { data } = await api.get('/footer-menus', {
+        params: { active: params?.active ? 'true' : 'false' },
+      });
+      return data;
+    } catch (e) {
+      return [];
+    }
+  },
+
+  create: async (payload: Partial<FooterMenu>): Promise<FooterMenu> => {
+    const { data } = await api.post('/footer-menus', payload);
+    return data;
+  },
+
+  update: async (id: string, payload: Partial<FooterMenu>): Promise<FooterMenu> => {
+    const { data } = await api.put(`/footer-menus/${id}`, payload);
+    return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/footer-menus/${id}`);
+  },
+
+  reorder: async (orders: { id: string; order: number }[]): Promise<void> => {
+    await api.put('/footer-menus/reorder', { orders });
+  },
+};
+
+export const LeadService = {
+  create: async (payload: { name: string; mobile: string }): Promise<any> => {
+    const { data } = await api.post('/api/leads', payload);
+    return data.lead;
+  },
+
+  getAll: async (params?: { search?: string }): Promise<Lead[]> => {
+    try {
+      const { data } = await api.get('/api/leads', { params });
+      console.log('Leads API res.data:', data);
+      return data.leads || [];
+    } catch (e) {
+      console.error('Error fetching leads:', e);
+      return [];
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/api/leads/${id}`);
+  },
+};
+
+export const PopupSettingService = {
+  get: async (): Promise<PopupSetting> => {
+    try {
+      const { data } = await api.get('/popup-settings');
+      return data;
+    } catch (e) {
+      console.warn('PopupSettings fetch error, returning defaults:', e);
+      return {
+        title: "Welcome to India's Trusted Wholesale Marketplace",
+        subtitle: 'Connect with verified suppliers and buyers instantly.',
+        description: 'Please enter your credentials to explore the premium wholesale catalog, download bulk catalogs, and request direct factory pricing.',
+        logo: '',
+        backgroundImage: '',
+        buttonText: 'Explore Wholesale Deals',
+        termsText: 'Verified B2B Business Verification',
+        isEnabled: true,
+      };
+    }
+  },
+
+  update: async (formData: FormData): Promise<PopupSetting> => {
+    const { data } = await api.put('/popup-settings', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
   },
 };

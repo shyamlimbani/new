@@ -5,6 +5,7 @@ import { Category } from '@/types';
 import { CategoryService } from '@/services/apiService';
 import { Plus, Search, Edit2, Trash2, X, Loader2 } from 'lucide-react';
 import { getImageUrl } from '@/lib/imageHelper';
+import Image from 'next/image';
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -186,11 +187,13 @@ export default function AdminCategories() {
                   <tr key={c._id} className="hover:bg-gray-55/50">
                     <td className="px-6 py-4">
                       <div className="w-12 h-12 bg-gray-50 border rounded-lg overflow-hidden flex items-center justify-center p-1">
-                        {c.image ? (
-                          <img src={getImageUrl(c.image)} alt="" className="max-h-full max-w-full object-cover" />
-                        ) : (
-                          <span className="text-gray-300 text-[10px] font-bold">{c.name.slice(0, 2).toUpperCase()}</span>
-                        )}
+                        <Image
+                          src={c.image ? getImageUrl(c.image) : "/placeholder.png"}
+                          alt=""
+                          width={48}
+                          height={48}
+                          className="max-h-full max-w-full object-cover"
+                        />
                       </div>
                     </td>
                     <td className="px-6 py-4">

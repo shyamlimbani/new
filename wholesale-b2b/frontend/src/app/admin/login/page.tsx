@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
-import { useAuthStore } from '@/store/authStore';
 import { Loader2 } from 'lucide-react';
 
 export default function AdminLogin() {
@@ -13,26 +11,28 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
 
-    try {
-      const { data } = await axios.post('http://localhost:5000/api/admin/login', {
-        email,
-        password,
-      });
+    if (
+      email === "admin@gmail.com" &&
+      password === "admin123"
+    ) {
+      localStorage.setItem(
+        "adminToken",
+        "admin_logged_in"
+      );
 
-      setAuth(data.token, data.email);
-      router.push('/admin');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid email or password');
-    } finally {
-      setLoading(false);
+      window.location.href =
+        "/admin/dashboard";
+
+      return;
     }
+
+    alert("Invalid credentials");
   };
 
   return (
@@ -49,7 +49,7 @@ export default function AdminLogin() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email Address

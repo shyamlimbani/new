@@ -1,611 +1,604 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Product, Category } from '@/types';
+import { Package, Plus, Pencil, Trash2, X, Search, Image as ImageIcon, Download, Upload } from 'lucide-react';
+import Link from 'next/link';
 import { ProductService, CategoryService } from '@/services/apiService';
-import { Plus, Search, Edit2, Trash2, X, PlusCircle, MinusCircle, Loader2 } from 'lucide-react';
-import { getImageUrl } from '@/lib/imageHelper';
+import { Product, Category } from '@/types';
+import toast from 'react-hot-toast';
 
-export default function AdminProducts() {
+export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchVal, setSearchVal] = useState('');
-  
-  // Modal states
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  
-  // Form states
-  const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [price, setPrice] = useState('');
-  const [shortDescription, setShortDescription] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [status, setStatus] = useState<'active' | 'draft' | 'out_of_stock'>('active');
-  const [tags, setTags] = useState('');
-  const [features, setFeatures] = useState<string[]>([]);
-  const [featureInput, setFeatureInput] = useState('');
-  
-  // Specifications builder state
-  const [specifications, setSpecifications] = useState<{ key: string; value: string }[]>([]);
-  const [newSpecKey, setNewSpecKey] = useState('');
-  const [newSpecVal, setNewSpecVal] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Image Upload State
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    description: '',
+    category: '',
+    image: '',
+    images: '',
+    sku: '',
+    hsnCode: '',
+    piecesPerCarton: '',
+    stock: '',
+    stockQuantity: '',
+    dimensions: '',
+    productWeight: '',
+    shippingWeight: '',
+    specifications: '',
+    material: '',
+    usage: '',
+    features: '',
+    whatsapp: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
-  const loadData = async () => {
-    setLoading(true);
+  const handleExportCsv = () => {
+    window.open(ProductService.exportCsvUrl, '_blank');
+  };
+
+  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const loadingToast = toast.loading('Importing products from CSV...');
+
+    try {
+      const data = await ProductService.importCsv(file);
+      toast.dismiss(loadingToast);
+
+      if (data.success) {
+        let msg = `Imported ${data.importedCount} products.`;
+        if (data.failedCount > 0) {
+          msg += ` (${data.failedCount} rows failed)`;
+        }
+        toast.success(msg, { duration: 5000 });
+
+        if (data.failedRows && data.failedRows.length > 0) {
+          console.warn('Failed CSV Rows:', data.failedRows);
+          const failedDetails = data.failedRows
+            .slice(0, 5)
+            .map((fr: any) => `Row ${fr.rowNumber}: ${fr.error}`)
+            .join('\n');
+          
+          alert(
+            `Import complete but some rows failed:\n\n${failedDetails}${
+              data.failedRows.length > 5 ? `\n...and ${data.failedRows.length - 5} more rows` : ''
+            }`
+          );
+        }
+
+        fetchData();
+      } else {
+        toast.error(data.message || 'Import failed');
+      }
+    } catch (error: any) {
+      toast.dismiss(loadingToast);
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Error uploading CSV file');
+    } finally {
+      setIsImporting(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDownloadSample = () => {
+    const headers = [
+      'name',
+      'price',
+      'description',
+      'category',
+      'image',
+      'whatsapp',
+      'sku',
+      'hsnCode',
+      'piecesPerCarton',
+      'stock',
+      'dimensions',
+      'productWeight',
+      'shippingWeight'
+    ];
+    const sampleRow = [
+      'Cotton Kurta',
+      '1499',
+      'Comfortable daily wear cotton kurta',
+      'Textiles & Garments',
+      'https://images.unsplash.com/photo-1558271821-65ab9014453a',
+      '919999999999',
+      'KU-COT-01',
+      '6214',
+      '50',
+      'In Stock',
+      '12x10x1',
+      '200g',
+      '250g'
+    ];
+    const escapeCsv = (str: string) => `"${str.replace(/"/g, '""')}"`;
+    const csvContent = [
+      headers.map(escapeCsv).join(','),
+      sampleRow.map(escapeCsv).join(',')
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'sample_products.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
     try {
       const [productsData, categoriesData] = await Promise.all([
         ProductService.getAll(),
-        CategoryService.getAll(),
+        CategoryService.getAll()
       ]);
       setProducts(productsData);
       setCategories(categoriesData);
-    } catch (err) {
-      console.error('Error loading data', err);
+    } catch (error) {
+      toast.error('Failed to load products');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Sync title to slug automatically on create
-  useEffect(() => {
-    if (!editingProduct) {
-      setSlug(title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
-    }
-  }, [title, editingProduct]);
-
-  const openAddModal = () => {
-    setEditingProduct(null);
-    setTitle('');
-    setSlug('');
-    setPrice('');
-    setShortDescription('');
-    setDescription('');
-    setCategory(categories[0]?._id || '');
-    setIsFeatured(false);
-    setStatus('active');
-    setTags('');
-    setFeatures([]);
-    setSpecifications([]);
-    setImageFiles([]);
-    setImageUrls([]);
-    setErrorMsg('');
-    setIsModalOpen(true);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const openEditModal = (product: Product) => {
-    setEditingProduct(product);
-    setTitle(product.title);
-    setSlug(product.slug);
-    setPrice(product.price || '');
-    setShortDescription(product.shortDescription);
-    setDescription(product.description);
-    
-    const catId = typeof product.category === 'object' ? product.category._id : product.category;
-    setCategory(catId || '');
-    
-    setIsFeatured(product.isFeatured);
-    setStatus(product.status);
-    setTags(product.tags ? product.tags.join(', ') : '');
-    setFeatures(product.features || []);
-    setSpecifications(product.specifications || []);
-    setImageFiles([]);
-    setImageUrls(product.images || []);
-    setErrorMsg('');
-    setIsModalOpen(true);
-  };
-
-  // Specs helper
-  const addSpecification = () => {
-    if (!newSpecKey.trim() || !newSpecVal.trim()) return;
-    setSpecifications([...specifications, { key: newSpecKey.trim(), value: newSpecVal.trim() }]);
-    setNewSpecKey('');
-    setNewSpecVal('');
-  };
-
-  const removeSpecification = (index: number) => {
-    setSpecifications(specifications.filter((_, i) => i !== index));
-  };
-
-  // Features helper
-  const addFeature = () => {
-    if (!featureInput.trim()) return;
-    setFeatures([...features, featureInput.trim()]);
-    setFeatureInput('');
-  };
-
-  const removeFeature = (index: number) => {
-    setFeatures(features.filter((_, i) => i !== index));
-  };
-
-  // Handle files select
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setImageFiles(Array.from(e.target.files));
-    }
-  };
-
-  // Submit Handler
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-    setSubmitting(true);
-
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('slug', slug);
-    formData.append('price', price);
-    formData.append('shortDescription', shortDescription);
-    formData.append('description', description);
-    formData.append('category', category);
-    formData.append('isFeatured', String(isFeatured));
-    formData.append('status', status);
-    formData.append('tags', tags);
-    formData.append('specifications', JSON.stringify(specifications));
-    formData.append('features', JSON.stringify(features));
-
-    // Append files
-    imageFiles.forEach((file) => {
-      formData.append('images', file);
-    });
-
+    setIsSubmitting(true);
     try {
-      if (editingProduct) {
-        await ProductService.update(editingProduct._id, formData);
-      } else {
-        await ProductService.create(formData);
-      }
-      setIsModalOpen(false);
-      loadData();
-    } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || 'Failed to save product');
+      console.log(formData);
+      await ProductService.create({
+        ...formData,
+        price: Number(formData.price),
+        stockQuantity: formData.stockQuantity ? Number(formData.stockQuantity) : 0,
+        images: formData.images ? formData.images.split(',').map(url => url.trim()).filter(url => url) : [],
+      });
+      toast.success('Product added successfully!');
+      setIsAddModalOpen(false);
+      setFormData({ name: '', price: '', description: '', category: '', image: '', images: '', sku: '', hsnCode: '', piecesPerCarton: '', stock: '', stockQuantity: '', dimensions: '', productWeight: '', shippingWeight: '', specifications: '', material: '', usage: '', features: '', whatsapp: '' });
+      fetchData();
+    } catch (error) {
+      console.log(error);
+      toast.error('Failed to add product');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await ProductService.delete(id);
-        loadData();
-      } catch (err) {
-        console.error('Error deleting product', err);
-      }
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    try {
+      await ProductService.delete(id);
+      toast.success('Product deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete product');
     }
   };
 
-  // Filter products by search
   const filteredProducts = products.filter((p) =>
-    p.title.toLowerCase().includes(searchVal.toLowerCase()) ||
-    p.shortDescription.toLowerCase().includes(searchVal.toLowerCase())
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const getCategoryName = (cat: any) => {
-    if (typeof cat === 'object' && cat !== null) {
-      return cat.name;
-    }
-    const match = categories.find((c) => c._id === cat || c.slug === cat);
-    return match ? match.name : 'Unknown';
-  };
 
   return (
     <div className="space-y-6">
-      {/* Header toolbar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Products Management</h1>
-          <p className="text-sm text-gray-500">Add, edit, or delete wholesale marketplace products.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Products</h1>
+          <p className="text-slate-500 text-sm">Manage your product catalog</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-lg text-sm transition flex items-center gap-1.5 shadow-sm"
-        >
-          <Plus className="w-5 h-5" />
-          Add Product
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Download Sample */}
+          <button
+            onClick={handleDownloadSample}
+            className="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+          >
+            <Download className="w-4 h-4 text-blue-600" />
+            <span>Sample CSV</span>
+          </button>
+
+          {/* Export CSV */}
+          <button
+            onClick={handleExportCsv}
+            className="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+          >
+            <Download className="w-4 h-4 text-green-600" />
+            <span>Export CSV</span>
+          </button>
+
+          {/* Import CSV */}
+          <label className="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer select-none">
+            <Upload className="w-4 h-4 text-orange-600" />
+            <span>{isImporting ? 'Importing...' : 'Import CSV'}</span>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleImportCsv}
+              disabled={isImporting}
+              className="hidden"
+            />
+          </label>
+
+          {/* Add Product */}
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Product</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter and search row */}
-      <div className="bg-white p-4 rounded-xl border border-gray-150 shadow-xs flex items-center">
-        <div className="relative flex-1 max-w-md">
-          <input
-            type="text"
-            placeholder="Search products by title..."
-            value={searchVal}
-            onChange={(e) => setSearchVal(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="p-4 border-b border-slate-100">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Table grid */}
-      {loading ? (
-        <div className="bg-white rounded-xl border border-gray-150 p-12 flex justify-center items-center shadow-xs">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mr-3" />
-          <span className="text-gray-500 font-semibold">Loading product table...</span>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-150 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-extrabold border-b border-gray-150">
-                  <th className="px-6 py-4">Image</th>
-                  <th className="px-6 py-4">Title</th>
-                  <th className="px-6 py-4">Category</th>
-                  <th className="px-6 py-4">Price</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider">
+                <th className="p-4 font-semibold">Product</th>
+                <th className="p-4 font-semibold">Category</th>
+                <th className="p-4 font-semibold">Price</th>
+                <th className="p-4 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-slate-500">
+                    Loading products...
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
-                {filteredProducts.map((p) => (
-                  <tr key={p._id} className="hover:bg-gray-50/50">
-                    <td className="px-6 py-4">
-                      <div className="w-12 h-12 bg-gray-50 border rounded-lg overflow-hidden flex items-center justify-center p-1">
-                        {p.image || (p.images && p.images.length > 0) ? (
-                          <img src={getImageUrl(p.image || p.images[0])} alt="" className="max-h-full max-w-full object-contain" />
-                        ) : (
-                          <span className="text-gray-300 text-[10px]">No image</span>
-                        )}
+              ) : filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-slate-500">
+                    No products found.
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map((product) => (
+                  <tr key={product._id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-200 flex items-center justify-center">
+                          {product.image ? (
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon className="w-4 h-4 text-slate-400" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-slate-800">{product.name}</div>
+                          <div className="text-xs text-slate-500 truncate max-w-xs">{product.description}</div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="font-semibold text-gray-800 line-clamp-1">{p.title}</div>
-                        {p.isFeatured && (
-                          <span className="inline-block mt-1 text-[9px] font-extrabold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md">
-                            Featured
-                          </span>
-                        )}
-                      </div>
+                    <td className="p-4 text-sm text-slate-600">
+                      {categories.find((c) => c._id === product.category)?.name || 'Unknown Category'}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 font-semibold">{getCategoryName(p.category)}</td>
-                    <td className="px-6 py-4 font-bold text-gray-700">{p.price || 'Request Price'}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        p.status === 'active'
-                          ? 'bg-green-50 text-green-700'
-                          : p.status === 'out_of_stock'
-                          ? 'bg-yellow-50 text-yellow-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {p.status.replace('_', ' ')}
-                      </span>
+                    <td className="p-4 text-sm font-medium text-slate-800">
+                      ₹{product.price.toLocaleString('en-IN')}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => openEditModal(p)}
-                          className="p-1.5 hover:bg-gray-150 text-gray-600 rounded-lg transition"
-                          title="Edit"
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/products/edit/${product._id}`}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                          <Pencil className="w-4 h-4" />
+                        </Link>
                         <button
-                          onClick={() => handleDelete(p._id)}
-                          className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition"
-                          title="Delete"
+                          onClick={() => handleDelete(product._id)}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
-                {filteredProducts.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400 font-medium">
-                      No products found. Add a product to get started.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
 
-      {/* Modal Dialog */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={() => !submitting && setIsModalOpen(false)} />
-          
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col z-10 animate-scale-in">
-            {/* Modal Header */}
-            <div className="p-6 border-b flex justify-between items-center shrink-0">
-              <h3 className="text-lg font-bold text-gray-800">
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
-              </h3>
+      {/* Add Product Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="sticky top-0 bg-white border-b border-slate-100 p-4 sm:p-6 flex items-center justify-between z-10">
+              <h2 className="text-xl font-bold text-slate-800">Add New Product</h2>
               <button
-                disabled={submitting}
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 text-gray-500 hover:bg-gray-100 rounded-lg transition"
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Modal Body (Scrollable) */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-              {errorMsg && (
-                <div className="bg-red-50 text-red-650 p-4 rounded-lg text-xs font-semibold">
-                  {errorMsg}
-                </div>
-              )}
-
-              {/* Title & Slug */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">Product Title*</label>
+            
+            <form onSubmit={handleAddSubmit} className="p-4 sm:p-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">Product Name</label>
                   <input
                     type="text"
+                    name="name"
                     required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. Industrial Lathe Machine"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. Heavy Duty CNC Machine"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">Product Slug*</label>
-                  <input
-                    type="text"
-                    required
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. industrial-lathe-machine"
-                  />
-                </div>
-              </div>
 
-              {/* Category, Price, Status */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">Category*</label>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Price (₹)</label>
+                  <input
+                    type="number"
+                    name="price"
+                    required
+                    min="0"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. 50000"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Category</label>
                   <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2 border rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                    name="category"
+                    required
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
                   >
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
+                    <option value="" disabled>Select Category</option>
+                    {categories.map((cat) => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">Price (Optional)</label>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">Image URL</label>
+                  <input
+                    type="url"
+                    name="image"
+                    required
+                    value={formData.image}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">Gallery Images (Comma separated URLs)</label>
                   <input
                     type="text"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. ₹3,50,000 / Unit"
+                    name="images"
+                    value={formData.images}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="URL 1, URL 2, URL 3..."
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">Status</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as any)}
-                    className="w-full px-3.5 py-2 border rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="draft">Draft</option>
-                    <option value="out_of_stock">Out of Stock</option>
-                  </select>
-                </div>
-              </div>
 
-              {/* Short description */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">Short Description* (1-2 sentences)</label>
-                <input
-                  type="text"
-                  required
-                  value={shortDescription}
-                  onChange={(e) => setShortDescription(e.target.value)}
-                  className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Summarize product main purpose..."
-                />
-              </div>
-
-              {/* Full Description */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">Full Description*</label>
-                <textarea
-                  required
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Detail specifications, operational aspects, packaging, delivery details..."
-                />
-              </div>
-
-              {/* Images */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">Upload Images (Select files)</label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                {imageUrls.length > 0 && (
-                  <div className="flex gap-2 mt-3 flex-wrap">
-                    {imageUrls.map((url, i) => (
-                      <div key={i} className="relative w-12 h-12 border rounded-lg overflow-hidden flex items-center justify-center bg-gray-50">
-                        <img src={getImageUrl(url)} alt="" className="max-h-full max-w-full object-contain" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Key Features List Builder */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">Product Key Features</label>
-                <div className="flex gap-2 mb-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">WhatsApp Number</label>
                   <input
                     type="text"
-                    value={featureInput}
-                    onChange={(e) => setFeatureInput(e.target.value)}
-                    className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. Made from corrosion-resistant SS316"
+                    name="whatsapp"
+                    required
+                    value={formData.whatsapp}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. 919999999999"
                   />
-                  <button
-                    type="button"
-                    onClick={addFeature}
-                    className="bg-blue-650 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center"
-                  >
-                    Add
-                  </button>
+                  <p className="text-xs text-slate-500">Include country code without + (e.g. 91 for India)</p>
                 </div>
-                {features.length > 0 && (
-                  <ul className="space-y-1 bg-gray-50 p-3 rounded-lg border text-xs">
-                    {features.map((feat, i) => (
-                      <li key={i} className="flex justify-between items-center py-1">
-                        <span className="text-gray-700 font-semibold">• {feat}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeFeature(i)}
-                          className="text-red-500 hover:text-red-700 font-bold"
-                        >
-                          Remove
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
 
-              {/* Specifications Key-Value Builder */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">Technical Specifications</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">Description</label>
+                  <textarea
+                    name="description"
+                    required
+                    rows={4}
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                    placeholder="Detailed description of the product..."
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Material</label>
                   <input
                     type="text"
-                    placeholder="Spec Key (e.g. Dimensions)"
-                    value={newSpecKey}
-                    onChange={(e) => setNewSpecKey(e.target.value)}
-                    className="px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    name="material"
+                    value={formData.material}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. Stainless Steel"
                   />
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Spec Value (e.g. 100 x 50 cm)"
-                      value={newSpecVal}
-                      onChange={(e) => setNewSpecVal(e.target.value)}
-                      className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={addSpecification}
-                      className="bg-blue-650 text-white font-bold px-4 py-2 rounded-lg text-sm"
-                    >
-                      Add
-                    </button>
-                  </div>
                 </div>
 
-                {specifications.length > 0 && (
-                  <div className="border rounded-lg overflow-hidden text-xs">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50 border-b text-gray-500 font-extrabold text-left">
-                          <th className="px-4 py-2">Specification Name</th>
-                          <th className="px-4 py-2">Value</th>
-                          <th className="px-4 py-2 text-right">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {specifications.map((spec, i) => (
-                          <tr key={i}>
-                            <td className="px-4 py-2 font-semibold text-gray-700">{spec.key}</td>
-                            <td className="px-4 py-2 text-gray-650">{spec.value}</td>
-                            <td className="px-4 py-2 text-right">
-                              <button
-                                type="button"
-                                onClick={() => removeSpecification(i)}
-                                className="text-red-500 hover:text-red-700 font-bold"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Tags & Featured */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">Tags (Comma-separated)</label>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Usage</label>
                   <input
                     type="text"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. lathe, cnc, machine"
+                    name="usage"
+                    value={formData.usage}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. Industrial, Commercial"
                   />
                 </div>
-                <div className="flex items-center gap-2 pt-5">
-                  <input
-                    type="checkbox"
-                    id="isFeatured"
-                    checked={isFeatured}
-                    onChange={(e) => setIsFeatured(e.target.checked)}
-                    className="w-4.5 h-4.5 text-blue-600 border-gray-300 rounded-sm focus:ring-blue-500"
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">Specifications (Legacy)</label>
+                  <textarea
+                    name="specifications"
+                    rows={3}
+                    value={formData.specifications}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                    placeholder="General specs..."
                   />
-                  <label htmlFor="isFeatured" className="text-sm font-bold text-gray-700 select-none">
-                    Feature on Homepage Grid
-                  </label>
+                </div>
+
+                <div className="pt-4 pb-2 sm:col-span-2 border-t border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Wholesale Specifications</h3>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">SKU</label>
+                  <input
+                    type="text"
+                    name="sku"
+                    value={formData.sku}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. HE-0610"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">HSN CODE</label>
+                  <input
+                    type="text"
+                    name="hsnCode"
+                    value={formData.hsnCode}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. 4814"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Piece per Carton</label>
+                  <input
+                    type="text"
+                    name="piecesPerCarton"
+                    value={formData.piecesPerCarton}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. 5000 Piece"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Stock Quantity</label>
+                  <input
+                    type="number"
+                    name="stockQuantity"
+                    min="0"
+                    value={formData.stockQuantity}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. 500"
+                  />
+                  <p className="text-xs text-slate-500">0 = Out of Stock · 1–10 = Limited · 11+ = In Stock</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Dimensions</label>
+                  <input
+                    type="text"
+                    name="dimensions"
+                    value={formData.dimensions}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. 6*6*2"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Product Weight</label>
+                  <input
+                    type="text"
+                    name="productWeight"
+                    value={formData.productWeight}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. 3 Gms"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Shipping Weight</label>
+                  <input
+                    type="text"
+                    name="shippingWeight"
+                    value={formData.shippingWeight}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="e.g. 3 Gms"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">Features</label>
+                  <textarea
+                    name="features"
+                    rows={3}
+                    value={formData.features}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                    placeholder="Feature 1, Feature 2..."
+                  />
                 </div>
               </div>
 
-              {/* Form Actions Footer */}
-              <div className="pt-6 border-t flex justify-end gap-3">
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
-                  disabled={submitting}
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-750 font-bold rounded-lg text-sm hover:bg-gray-50 transition"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="bg-blue-650 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-lg text-sm transition flex items-center gap-1.5 shadow-sm"
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-70"
                 >
-                  {submitting && <Loader2 className="w-4.5 h-4.5 animate-spin" />}
-                  <span>{editingProduct ? 'Save Changes' : 'Create Product'}</span>
+                  {isSubmitting ? 'Saving...' : 'Save Product'}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
