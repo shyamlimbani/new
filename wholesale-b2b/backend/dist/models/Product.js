@@ -23,6 +23,9 @@ const productSchema = new mongoose_1.default.Schema({
     images: [{
             type: String,
         }],
+    galleryImages: [{
+            type: String,
+        }],
     sku: { type: String },
     hsnCode: { type: String },
     piecesPerCarton: { type: String },

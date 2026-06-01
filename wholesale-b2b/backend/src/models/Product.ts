@@ -7,6 +7,7 @@ export interface IProduct extends Document {
   category: string;
   image: string;
   images: string[];
+  galleryImages?: string[];
   sku: string;
   hsnCode: string;
   piecesPerCarton: string;
@@ -41,6 +42,9 @@ const productSchema = new mongoose.Schema({
     type: String,
   },
   images: [{
+    type: String,
+  }],
+  galleryImages: [{
     type: String,
   }],
   sku: { type: String },

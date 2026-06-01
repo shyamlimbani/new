@@ -53,6 +53,13 @@ export const createProduct = async (
 
     console.log("BODY:", req.body);
 
+    // Synchronize images and galleryImages
+    if (req.body.images && !req.body.galleryImages) {
+      req.body.galleryImages = req.body.images;
+    } else if (req.body.galleryImages && !req.body.images) {
+      req.body.images = req.body.galleryImages;
+    }
+
     const product =
       await Product.create(req.body);
 
@@ -79,7 +86,7 @@ export const createProduct = async (
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { 
-      name, price, description, category, image, images, 
+      name, price, description, category, image, images, galleryImages,
       sku, hsnCode, piecesPerCarton, stock, stockQuantity, dimensions, productWeight, shippingWeight,
       specifications, material, usage, features, whatsapp 
     } = req.body;
@@ -100,7 +107,13 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.image = cleanImage;
       }
       
-      if (images !== undefined) product.images = images;
+      if (images !== undefined) {
+        product.images = images;
+        product.galleryImages = images;
+      } else if (galleryImages !== undefined) {
+        product.images = galleryImages;
+        product.galleryImages = galleryImages;
+      }
       if (sku !== undefined) product.sku = sku;
       if (hsnCode !== undefined) product.hsnCode = hsnCode;
       if (piecesPerCarton !== undefined) product.piecesPerCarton = piecesPerCarton;
@@ -160,6 +173,7 @@ export const exportProducts = async (req: Request, res: Response) => {
       'description',
       'category',
       'image',
+      'galleryImages',
       'whatsapp',
       'sku',
       'hsnCode',
@@ -176,6 +190,7 @@ export const exportProducts = async (req: Request, res: Response) => {
       description: p.description || '',
       category: p.category ? (categoryMap[p.category] || p.category) : '',
       image: p.image || '',
+      galleryImages: p.galleryImages && p.galleryImages.length ? p.galleryImages.join('|') : (p.images && p.images.length ? p.images.join('|') : ''),
       whatsapp: p.whatsapp || '',
       sku: p.sku || '',
       hsnCode: p.hsnCode || '',
@@ -283,6 +298,8 @@ export const importProducts = async (req: Request, res: Response) => {
 
             const rawDescription = getRowVal(row, 'description');
             const rawImage = getRowVal(row, 'image');
+            const rawGalleryImages = getRowVal(row, 'galleryImages');
+            const galleryImagesArray = typeof rawGalleryImages === 'string' ? rawGalleryImages.split('|').map((img: string) => img.trim()).filter(Boolean) : [];
             const rawWhatsapp = getRowVal(row, 'whatsapp');
             const rawHsnCode = getRowVal(row, 'hsnCode');
             const rawPiecesPerCarton = getRowVal(row, 'piecesPerCarton');
@@ -298,6 +315,8 @@ export const importProducts = async (req: Request, res: Response) => {
               description: typeof rawDescription === 'string' ? rawDescription.trim() : '',
               category: categoryId,
               image: typeof rawImage === 'string' ? rawImage.trim() : '',
+              images: galleryImagesArray,
+              galleryImages: galleryImagesArray,
               whatsapp: typeof rawWhatsapp === 'string' ? rawWhatsapp.trim() : '',
               sku: sku || '',
               hsnCode: typeof rawHsnCode === 'string' ? rawHsnCode.trim() : '',

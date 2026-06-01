@@ -6,6 +6,7 @@ export interface Product {
   category: any;
   image: string;
   images?: string[];
+  galleryImages?: string[];
   sku?: string;
   hsnCode?: string;
   piecesPerCarton?: string;

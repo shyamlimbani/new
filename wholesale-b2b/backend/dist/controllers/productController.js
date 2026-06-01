@@ -60,6 +60,13 @@ exports.getProductById = getProductById;
 const createProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log("BODY:", req.body);
+        // Synchronize images and galleryImages
+        if (req.body.images && !req.body.galleryImages) {
+            req.body.galleryImages = req.body.images;
+        }
+        else if (req.body.galleryImages && !req.body.images) {
+            req.body.images = req.body.galleryImages;
+        }
         const product = yield Product_1.default.create(req.body);
         res.status(201).json(product);
     }
@@ -76,7 +83,7 @@ const createProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 exports.createProduct = createProduct;
 const updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { name, price, description, category, image, images, sku, hsnCode, piecesPerCarton, stock, stockQuantity, dimensions, productWeight, shippingWeight, specifications, material, usage, features, whatsapp } = req.body;
+        const { name, price, description, category, image, images, galleryImages, sku, hsnCode, piecesPerCarton, stock, stockQuantity, dimensions, productWeight, shippingWeight, specifications, material, usage, features, whatsapp } = req.body;
         const product = yield Product_1.default.findById(req.params.id);
         if (product) {
             product.name = name || product.name;
@@ -91,8 +98,14 @@ const updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 }
                 product.image = cleanImage;
             }
-            if (images !== undefined)
+            if (images !== undefined) {
                 product.images = images;
+                product.galleryImages = images;
+            }
+            else if (galleryImages !== undefined) {
+                product.images = galleryImages;
+                product.galleryImages = galleryImages;
+            }
             if (sku !== undefined)
                 product.sku = sku;
             if (hsnCode !== undefined)
@@ -162,6 +175,7 @@ const exportProducts = (req, res) => __awaiter(void 0, void 0, void 0, function*
             'description',
             'category',
             'image',
+            'galleryImages',
             'whatsapp',
             'sku',
             'hsnCode',
@@ -177,6 +191,7 @@ const exportProducts = (req, res) => __awaiter(void 0, void 0, void 0, function*
             description: p.description || '',
             category: p.category ? (categoryMap[p.category] || p.category) : '',
             image: p.image || '',
+            galleryImages: p.galleryImages && p.galleryImages.length ? p.galleryImages.join('|') : (p.images && p.images.length ? p.images.join('|') : ''),
             whatsapp: p.whatsapp || '',
             sku: p.sku || '',
             hsnCode: p.hsnCode || '',
@@ -269,6 +284,8 @@ const importProducts = (req, res) => __awaiter(void 0, void 0, void 0, function*
                     }
                     const rawDescription = getRowVal(row, 'description');
                     const rawImage = getRowVal(row, 'image');
+                    const rawGalleryImages = getRowVal(row, 'galleryImages');
+                    const galleryImagesArray = typeof rawGalleryImages === 'string' ? rawGalleryImages.split('|').map((img) => img.trim()).filter(Boolean) : [];
                     const rawWhatsapp = getRowVal(row, 'whatsapp');
                     const rawHsnCode = getRowVal(row, 'hsnCode');
                     const rawPiecesPerCarton = getRowVal(row, 'piecesPerCarton');
@@ -283,6 +300,8 @@ const importProducts = (req, res) => __awaiter(void 0, void 0, void 0, function*
                         description: typeof rawDescription === 'string' ? rawDescription.trim() : '',
                         category: categoryId,
                         image: typeof rawImage === 'string' ? rawImage.trim() : '',
+                        images: galleryImagesArray,
+                        galleryImages: galleryImagesArray,
                         whatsapp: typeof rawWhatsapp === 'string' ? rawWhatsapp.trim() : '',
                         sku: sku || '',
                         hsnCode: typeof rawHsnCode === 'string' ? rawHsnCode.trim() : '',
