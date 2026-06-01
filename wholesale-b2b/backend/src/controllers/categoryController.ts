@@ -1,11 +1,28 @@
 import { Request, Response } from 'express';
 import Category from '../models/Category';
+import Product from '../models/Product';
 import asyncWrapper from '../utils/asyncWrapper';
 import { uploadToCloudinary } from '../utils/cloudinaryUpload';
 
 export const getCategories = asyncWrapper(async (req: Request, res: Response) => {
   const categories = await Category.find({}).populate('parent');
-  res.json(categories);
+  
+  // Calculate product counts for each category
+  const counts = await Product.aggregate([
+    { $group: { _id: "$category", count: { $sum: 1 } } }
+  ]);
+  
+  const countMap = counts.reduce((acc, curr) => {
+    if (curr._id) acc[curr._id.toString()] = curr.count;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const categoriesWithCounts = categories.map(cat => ({
+    ...cat.toObject(),
+    productCount: countMap[cat._id.toString()] || 0
+  }));
+
+  res.json(categoriesWithCounts);
 });
 
 export const getCategoryById = asyncWrapper(async (req: Request, res: Response) => {

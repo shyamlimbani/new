@@ -20,7 +20,7 @@ const csv_parser_1 = __importDefault(require("csv-parser"));
 const stream_1 = require("stream");
 const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { category, search } = req.query;
+        const { category, search, page, limit } = req.query;
         let query = {};
         if (category) {
             query.category = category;
@@ -33,6 +33,21 @@ const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     { description: { $regex: cleanSearch, $options: 'i' } }
                 ];
             }
+        }
+        if (page !== undefined || limit !== undefined) {
+            const pageNum = Math.max(1, parseInt(page) || 1);
+            const limitNum = Math.max(1, parseInt(limit) || 30);
+            const skip = (pageNum - 1) * limitNum;
+            const [products, total] = yield Promise.all([
+                Product_1.default.find(query).sort({ createdAt: -1 }).skip(skip).limit(limitNum),
+                Product_1.default.countDocuments(query)
+            ]);
+            return res.json({
+                products,
+                total,
+                page: pageNum,
+                pages: Math.ceil(total / limitNum)
+            });
         }
         const products = yield Product_1.default.find(query).sort({ createdAt: -1 });
         res.json(products);

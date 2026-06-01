@@ -27,7 +27,10 @@ function MarketplaceContent() {
 
   // Local States
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   
   // Frontend Filter States
@@ -43,29 +46,63 @@ function MarketplaceContent() {
   }, [searchParam]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBanners = async () => {
+      try {
+        const bannersData = await BannerService.getAll({ active: true });
+        setBanners(bannersData);
+      } catch (err) {
+        console.error('Error fetching banners', err);
+      }
+    };
+    fetchBanners();
+  }, []);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
       setLoading(true);
       try {
-        const [bannersData, productsData] = await Promise.all([
-          BannerService.getAll({ active: true }),
-          ProductService.getAll() // Fetch all products once, filter on the frontend for instant responsiveness
-        ]);
-        setBanners(bannersData);
-        setAllProducts(productsData);
+        let categoryId = '';
+        if (selectedCategorySlug) {
+          const cat = categories.find(c => c.slug === selectedCategorySlug);
+          if (cat) {
+            categoryId = cat._id;
+          }
+        }
+
+        const searchQuery = sidebarSearch.trim() || globalSearch.trim();
+
+        const response = await ProductService.getAll({
+          category: categoryId,
+          search: searchQuery,
+          page: currentPage,
+          limit: 30
+        });
+
+        if (response && response.products) {
+          setProducts(response.products);
+          setTotalProducts(response.total || 0);
+          setTotalPages(response.pages || 1);
+        } else if (Array.isArray(response)) {
+          setProducts(response);
+          setTotalProducts(response.length);
+          setTotalPages(1);
+        }
       } catch (err) {
-        console.error('Error fetching data', err);
+        console.error('Error fetching products', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+
+    fetchProducts();
+  }, [selectedCategorySlug, globalSearch, sidebarSearch, currentPage, categories]);
 
   // Reset all filters
   const handleResetFilters = () => {
     setSelectedCategorySlug('');
     setSidebarSearch('');
     setGlobalSearch('');
+    setCurrentPage(1);
     if (searchParam) {
       router.push('/');
     }
@@ -74,6 +111,7 @@ function MarketplaceContent() {
   // Route updates
   const handleCategoryChange = (slug: string) => {
     setSelectedCategorySlug(slug);
+    setCurrentPage(1);
     setMobileFiltersOpen(false);
     // Remove category from URL if it exists to cleanly move to frontend filtering
     if (categoryParam) {
@@ -85,6 +123,7 @@ function MarketplaceContent() {
 
   const handleGlobalSearch = (query: string, category: string) => {
     setGlobalSearch(query);
+    setCurrentPage(1);
     const params = new URLSearchParams();
     if (query) params.set('search', query);
     if (category) {
@@ -93,47 +132,17 @@ function MarketplaceContent() {
     router.push(`/?${params.toString()}`, { scroll: false });
   };
 
-  // Frontend Filtering Logic
-  const filteredProducts = allProducts.filter(product => {
-    // Category Filter
-    if (selectedCategorySlug) {
-      const selectedCatObj = categories.find(c => c.slug === selectedCategorySlug);
-      if (selectedCatObj && product.category !== selectedCatObj._id) {
-        return false;
-      }
-    }
-    
-    // Global Header Search Filter
-    if (globalSearch) {
-      const searchLower = globalSearch.trim().toLowerCase();
-      if (searchLower && 
-          !product.name.toLowerCase().includes(searchLower) && 
-          !product.description.toLowerCase().includes(searchLower)) {
-        return false;
-      }
-    }
-    
-    // Sidebar Search Filter
-    if (sidebarSearch) {
-      const searchLower = sidebarSearch.trim().toLowerCase();
-      if (searchLower && 
-          !product.name.toLowerCase().includes(searchLower) && 
-          !product.description.toLowerCase().includes(searchLower)) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
+  // Frontend filtering logic is now handled server-side, but keep variable for compatibility
+  const filteredProducts = products;
 
-  // Calculate Product Counts dynamically
+  // Calculate Product Counts dynamically using backend-provided counts
   const productCounts = categories.reduce((acc, cat) => {
-    acc[cat._id] = allProducts.filter(p => p.category === cat._id).length;
+    acc[cat._id] = cat.productCount || 0;
     return acc;
   }, {} as Record<string, number>);
   
   // Add total for 'All Products'
-  productCounts['all'] = allProducts.length;
+  productCounts['all'] = categories.reduce((sum, cat) => sum + (cat.productCount || 0), 0);
 
   return (
     <MainLayout
@@ -159,7 +168,10 @@ function MarketplaceContent() {
               selectedCategory={selectedCategorySlug}
               onCategoryChange={handleCategoryChange}
               searchQuery={sidebarSearch}
-              onSearchQueryChange={setSidebarSearch}
+              onSearchQueryChange={(val) => {
+                setSidebarSearch(val);
+                setCurrentPage(1);
+              }}
               onReset={handleResetFilters}
               isMobileOpen={mobileFiltersOpen}
               onMobileClose={() => setMobileFiltersOpen(false)}
@@ -175,8 +187,12 @@ function MarketplaceContent() {
               <div className="text-sm font-medium text-gray-600">
                   {loading ? (
                     <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/> Loading products...</span>
+                  ) : filteredProducts.length > 0 ? (
+                    <span>
+                      Showing <strong className="text-gray-900">{(currentPage - 1) * 30 + 1}–{Math.min(currentPage * 30, totalProducts)}</strong> of <strong className="text-gray-900">{totalProducts}</strong> products
+                    </span>
                   ) : (
-                    <span>Showing <strong className="text-gray-900">{filteredProducts.length}</strong> products</span>
+                    <span>Showing <strong className="text-gray-900">0</strong> products</span>
                   )}
               </div>
 
@@ -195,14 +211,93 @@ function MarketplaceContent() {
                  <Loader2 className="w-10 h-10 animate-spin text-[#cc3a07]" />
                </div>
             ) : filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredProducts.map((product) => (
-                  <ProductCard 
-                    key={product._id} 
-                    product={product} 
-                    category={categories.find(c => c._id === product.category)}
-                  />
-                ))}
+              <div className="flex flex-col gap-8 w-full animate-fade-in">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {filteredProducts.map((product) => (
+                    <ProductCard 
+                      key={product._id} 
+                      product={product} 
+                      category={categories.find(c => c._id === product.category)}
+                    />
+                  ))}
+                </div>
+                
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-4 py-4 border-t border-slate-100 w-full select-none">
+                    {/* Previous Button */}
+                    <button
+                      onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`px-3 sm:px-4 py-2 border rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1 ${
+                        currentPage === 1
+                          ? 'border-slate-100 text-slate-350 cursor-not-allowed opacity-50 bg-slate-50'
+                          : 'border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      <span>&larr;</span> <span className="hidden sm:inline">Previous</span>
+                    </button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      {(() => {
+                        const pages: (number | string)[] = [];
+                        if (totalPages <= 5) {
+                          for (let i = 1; i <= totalPages; i++) pages.push(i);
+                        } else {
+                          pages.push(1);
+                          if (currentPage > 3) pages.push('...');
+                          const start = Math.max(2, currentPage - 1);
+                          const end = Math.min(totalPages - 1, currentPage + 1);
+                          for (let i = start; i <= end; i++) pages.push(i);
+                          if (currentPage < totalPages - 2) pages.push('...');
+                          pages.push(totalPages);
+                        }
+
+                        return pages.map((p, idx) => {
+                          if (p === '...') {
+                            return (
+                              <span
+                                key={`ellipsis-${idx}`}
+                                className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-slate-450 text-xs sm:text-sm font-medium"
+                              >
+                                ...
+                              </span>
+                            );
+                          }
+
+                          const isPageActive = currentPage === p;
+                          return (
+                            <button
+                              key={`page-${p}`}
+                              onClick={() => setCurrentPage(Number(p))}
+                              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center ${
+                                isPageActive
+                                  ? 'bg-[#cc3a07] text-white shadow-sm'
+                                  : 'text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+
+                    {/* Next Button */}
+                    <button
+                      onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 sm:px-4 py-2 border rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1 ${
+                        currentPage === totalPages
+                          ? 'border-slate-100 text-slate-350 cursor-not-allowed opacity-50 bg-slate-50'
+                          : 'border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="hidden sm:inline">Next</span> <span>&rarr;</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 px-6 text-center bg-white rounded-3xl border border-slate-100 shadow-xs w-full">

@@ -405,12 +405,12 @@ export const AdminService = {
 };
 
 export const ProductService = {
-  getAll: async (params?: { category?: string; search?: string }): Promise<Product[]> => {
+  getAll: async (params?: { category?: string; search?: string; page?: number; limit?: number }): Promise<Product[] & { products?: Product[]; total?: number; page?: number; pages?: number }> => {
     try {
       const { data } = await api.get('/api/products', { params });
       return data;
     } catch (e) {
-      return [];
+      return (params && (params.page || params.limit) ? { products: [], total: 0, page: 1, pages: 0 } : []) as any;
     }
   },
 

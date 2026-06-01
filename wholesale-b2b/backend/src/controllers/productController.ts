@@ -7,7 +7,7 @@ import { Readable } from 'stream';
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const { category, search } = req.query;
+    const { category, search, page, limit } = req.query;
     let query: any = {};
 
     if (category) {
@@ -22,6 +22,24 @@ export const getProducts = async (req: Request, res: Response) => {
           { description: { $regex: cleanSearch, $options: 'i' } }
         ];
       }
+    }
+
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Math.max(1, parseInt(page as string) || 1);
+      const limitNum = Math.max(1, parseInt(limit as string) || 30);
+      const skip = (pageNum - 1) * limitNum;
+
+      const [products, total] = await Promise.all([
+        Product.find(query).sort({ createdAt: -1 }).skip(skip).limit(limitNum),
+        Product.countDocuments(query)
+      ]);
+
+      return res.json({
+        products,
+        total,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum)
+      });
     }
 
     const products = await Product.find(query).sort({ createdAt: -1 });

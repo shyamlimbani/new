@@ -31,6 +31,7 @@ export interface Category {
   image?: string;
   description?: string;
   parent?: any; // Can be ObjectId string or Category object
+  productCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }

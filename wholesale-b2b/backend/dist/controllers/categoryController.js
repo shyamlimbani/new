@@ -14,11 +14,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCategory = exports.updateCategory = exports.createCategory = exports.getCategoryById = exports.getCategories = void 0;
 const Category_1 = __importDefault(require("../models/Category"));
+const Product_1 = __importDefault(require("../models/Product"));
 const asyncWrapper_1 = __importDefault(require("../utils/asyncWrapper"));
 const cloudinaryUpload_1 = require("../utils/cloudinaryUpload");
 exports.getCategories = (0, asyncWrapper_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const categories = yield Category_1.default.find({}).populate('parent');
-    res.json(categories);
+    // Calculate product counts for each category
+    const counts = yield Product_1.default.aggregate([
+        { $group: { _id: "$category", count: { $sum: 1 } } }
+    ]);
+    const countMap = counts.reduce((acc, curr) => {
+        if (curr._id)
+            acc[curr._id.toString()] = curr.count;
+        return acc;
+    }, {});
+    const categoriesWithCounts = categories.map(cat => (Object.assign(Object.assign({}, cat.toObject()), { productCount: countMap[cat._id.toString()] || 0 })));
+    res.json(categoriesWithCounts);
 }));
 exports.getCategoryById = (0, asyncWrapper_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const category = yield Category_1.default.findById(req.params.id).populate('parent');
