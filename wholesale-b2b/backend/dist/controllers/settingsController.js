@@ -41,7 +41,7 @@ exports.getSettings = (0, asyncWrapper_1.default)((req, res) => __awaiter(void 0
     res.json(settings);
 }));
 exports.updateSettings = (0, asyncWrapper_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { logo, footerLogo, whatsappNumber, websiteName, seoTitle, seoDescription, footerText, footerDescription, contactEmail, contactAddress, facebook, instagram, twitter, linkedin, favicon, } = req.body;
+    const { logo, footerLogo, whatsappNumber, websiteName, seoTitle, seoDescription, footerText, footerDescription, contactEmail, contactAddress, facebook, instagram, twitter, linkedin, favicon, watermarkLogo, } = req.body;
     let settings = yield Settings_1.default.findOne({});
     if (!settings) {
         settings = new Settings_1.default({
@@ -65,6 +65,9 @@ exports.updateSettings = (0, asyncWrapper_1.default)((req, res) => __awaiter(voi
     }
     if (favicon !== undefined) {
         settings.favicon = favicon;
+    }
+    if (watermarkLogo !== undefined) {
+        settings.watermarkLogo = watermarkLogo;
     }
     if (settings.socialLinks) {
         settings.socialLinks.facebook = facebook !== undefined ? facebook : settings.socialLinks.facebook;
@@ -110,6 +113,16 @@ exports.updateSettings = (0, asyncWrapper_1.default)((req, res) => __awaiter(voi
                 console.warn('Cloudinary upload failed for favicon, falling back to base64:', err);
                 const mimeType = files.favicon[0].mimetype || 'image/png';
                 settings.favicon = `data:${mimeType};base64,${files.favicon[0].buffer.toString('base64')}`;
+            }
+        }
+        if (files.watermarkLogo && files.watermarkLogo[0]) {
+            try {
+                settings.watermarkLogo = yield (0, cloudinaryUpload_1.uploadToCloudinary)(files.watermarkLogo[0].buffer, 'settings');
+            }
+            catch (err) {
+                console.warn('Cloudinary upload failed for watermarkLogo, falling back to base64:', err);
+                const mimeType = files.watermarkLogo[0].mimetype || 'image/png';
+                settings.watermarkLogo = `data:${mimeType};base64,${files.watermarkLogo[0].buffer.toString('base64')}`;
             }
         }
     }

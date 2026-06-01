@@ -330,9 +330,11 @@ export const SettingsService = {
 
       const logoFile = formData.get('logo') as File | null;
       const footerLogoFile = formData.get('footerLogo') as File | null;
+      const watermarkLogoFile = formData.get('watermarkLogo') as File | null;
       
       let logoUrl = localSettings.logo;
       let footerLogoUrl = localSettings.footerLogo;
+      let watermarkLogoUrl = localSettings.watermarkLogo;
       
       if (logoFile && typeof window !== 'undefined') {
         try {
@@ -348,11 +350,19 @@ export const SettingsService = {
           console.error(err);
         }
       }
+      if (watermarkLogoFile && typeof window !== 'undefined') {
+        try {
+          watermarkLogoUrl = URL.createObjectURL(watermarkLogoFile);
+        } catch (err) {
+          console.error(err);
+        }
+      }
 
       localSettings = {
         ...localSettings,
         logo: logoUrl,
         footerLogo: footerLogoUrl,
+        watermarkLogo: watermarkLogoUrl,
         whatsappNumber: whatsappNumber || localSettings.whatsappNumber,
         websiteName: websiteName || localSettings.websiteName,
         seoTitle: seoTitle !== undefined ? seoTitle : localSettings.seoTitle,

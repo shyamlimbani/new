@@ -22,6 +22,7 @@ export interface ISettings extends Document {
   contactEmail?: string;
   contactAddress?: string;
   favicon?: string;
+  watermarkLogo?: string;
 }
 
 const settingsSchema = new Schema<ISettings>(
@@ -33,6 +34,9 @@ const settingsSchema = new Schema<ISettings>(
       type: String, // Cloudinary URL
     },
     favicon: {
+      type: String, // Cloudinary URL
+    },
+    watermarkLogo: {
       type: String, // Cloudinary URL
     },
     whatsappNumber: {

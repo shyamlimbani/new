@@ -7,6 +7,24 @@ import PDFDocument from 'pdfkit';
 import axios from 'axios';
 import mongoose from 'mongoose';
 
+const fetchImageBuffer = async (urlOrBase64: string): Promise<Buffer | null> => {
+  if (!urlOrBase64) return null;
+  if (urlOrBase64.startsWith('data:')) {
+    const base64Data = urlOrBase64.split(';base64,').pop();
+    if (base64Data) {
+      return Buffer.from(base64Data, 'base64');
+    }
+  } else {
+    try {
+      const response = await axios.get(urlOrBase64, { responseType: 'arraybuffer' });
+      return Buffer.from(response.data, 'binary');
+    } catch (err) {
+      console.warn(`Failed to fetch image: ${urlOrBase64}`, err);
+    }
+  }
+  return null;
+};
+
 export const downloadCatalog = asyncWrapper(async (req: Request, res: Response) => {
   const { categoryId } = req.params;
 
@@ -37,8 +55,13 @@ export const downloadCatalog = asyncWrapper(async (req: Request, res: Response) 
   const settings = await Settings.findOne();
   const companyName = settings?.websiteName || 'Wholesale B2B';
 
+  // Pre-load branding images
+  const logoBuffer = settings?.logo ? await fetchImageBuffer(settings.logo) : null;
+  const watermarkUrl = settings?.watermarkLogo || settings?.logo || '';
+  const watermarkBuffer = watermarkUrl ? await fetchImageBuffer(watermarkUrl) : null;
+
   // Create PDF
-  const doc = new PDFDocument({ margin: 40, size: 'A4' });
+  const doc = new PDFDocument({ margin: 40, size: 'A4', bufferPages: true });
 
   // Set response headers for download
   res.setHeader('Content-Type', 'application/pdf');
@@ -46,14 +69,49 @@ export const downloadCatalog = asyncWrapper(async (req: Request, res: Response) 
 
   doc.pipe(res);
 
+  const drawWatermark = () => {
+    if (watermarkBuffer) {
+      try {
+        doc.save();
+        doc.opacity(0.08); // 8% opacity
+        const size = 300;
+        doc.image(watermarkBuffer, (doc.page.width - size) / 2, (doc.page.height - size) / 2, { fit: [size, size], align: 'center', valign: 'center' });
+        doc.restore();
+      } catch (err) {
+        console.error('Failed to draw watermark:', err);
+      }
+    }
+  };
+
+  // Draw watermark on first page
+  drawWatermark();
+
+  // Draw watermark on subsequent pages
+  doc.on('pageAdded', () => {
+    drawWatermark();
+  });
+
   // Helper to draw Header
   const drawHeader = (pageTitle: string) => {
-    doc.fillColor('#1f2937').fontSize(24).font('Helvetica-Bold').text(companyName, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fillColor('#4b5563').fontSize(14).font('Helvetica').text(pageTitle, { align: 'center' });
-    doc.moveDown(1);
-    doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#e5e7eb').lineWidth(2).stroke();
-    doc.moveDown(1.5);
+    let headerY = 20;
+    if (logoBuffer) {
+      try {
+        doc.image(logoBuffer, (doc.page.width - 120) / 2, headerY, { fit: [120, 40], align: 'center' });
+      } catch (err) {
+        console.error('Failed to draw header logo:', err);
+        doc.fillColor('#1f2937').fontSize(20).font('Helvetica-Bold').text(companyName, 40, headerY, { align: 'center' });
+      }
+      headerY += 45;
+    } else {
+      doc.fillColor('#1f2937').fontSize(20).font('Helvetica-Bold').text(companyName, 40, headerY, { align: 'center' });
+      headerY += 25;
+    }
+
+    doc.fillColor('#4b5563').fontSize(12).font('Helvetica').text(pageTitle, 40, headerY, { align: 'center' });
+    
+    const sepY = headerY + 18;
+    doc.moveTo(40, sepY).lineTo(555, sepY).strokeColor('#e5e7eb').lineWidth(2).stroke();
+    doc.y = sepY + 15;
   };
 
   // Helper to draw Footer

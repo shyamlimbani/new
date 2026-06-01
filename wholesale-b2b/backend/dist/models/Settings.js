@@ -44,6 +44,9 @@ const settingsSchema = new mongoose_1.Schema({
     favicon: {
         type: String, // Cloudinary URL
     },
+    watermarkLogo: {
+        type: String, // Cloudinary URL
+    },
     whatsappNumber: {
         type: String,
         required: false,

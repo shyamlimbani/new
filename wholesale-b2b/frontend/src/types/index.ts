@@ -69,6 +69,7 @@ export interface Settings {
   contactEmail?: string;
   contactAddress?: string;
   favicon?: string;
+  watermarkLogo?: string;
   createdAt?: string;
   updatedAt?: string;
 }

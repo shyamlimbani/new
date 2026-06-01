@@ -45,6 +45,7 @@ export const updateSettings = asyncWrapper(async (req: Request, res: Response) =
     twitter,
     linkedin,
     favicon,
+    watermarkLogo,
   } = req.body;
 
   let settings = await Settings.findOne({});
@@ -72,6 +73,9 @@ export const updateSettings = asyncWrapper(async (req: Request, res: Response) =
   }
   if (favicon !== undefined) {
     settings.favicon = favicon;
+  }
+  if (watermarkLogo !== undefined) {
+    settings.watermarkLogo = watermarkLogo;
   }
 
   if (settings.socialLinks) {
@@ -115,6 +119,15 @@ export const updateSettings = asyncWrapper(async (req: Request, res: Response) =
         console.warn('Cloudinary upload failed for favicon, falling back to base64:', err);
         const mimeType = files.favicon[0].mimetype || 'image/png';
         settings.favicon = `data:${mimeType};base64,${files.favicon[0].buffer.toString('base64')}`;
+      }
+    }
+    if (files.watermarkLogo && files.watermarkLogo[0]) {
+      try {
+        settings.watermarkLogo = await uploadToCloudinary(files.watermarkLogo[0].buffer, 'settings');
+      } catch (err) {
+        console.warn('Cloudinary upload failed for watermarkLogo, falling back to base64:', err);
+        const mimeType = files.watermarkLogo[0].mimetype || 'image/png';
+        settings.watermarkLogo = `data:${mimeType};base64,${files.watermarkLogo[0].buffer.toString('base64')}`;
       }
     }
   }

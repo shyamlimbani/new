@@ -45,6 +45,8 @@ export default function AdminSettings() {
   const [footerLogoUrl, setFooterLogoUrl] = useState('');
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [faviconUrl, setFaviconUrl] = useState('');
+  const [watermarkLogoFile, setWatermarkLogoFile] = useState<File | null>(null);
+  const [watermarkLogoUrl, setWatermarkLogoUrl] = useState('');
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -63,6 +65,7 @@ export default function AdminSettings() {
           setLogoUrl(data.logo || '');
           setFooterLogoUrl(data.footerLogo || '');
           setFaviconUrl(data.favicon || '');
+          setWatermarkLogoUrl(data.watermarkLogo || '');
           
           if (data.socialLinks) {
             setFacebook(data.socialLinks.facebook || '');
@@ -118,6 +121,9 @@ export default function AdminSettings() {
     if (faviconFile) {
       formData.append('favicon', faviconFile);
     }
+    if (watermarkLogoFile) {
+      formData.append('watermarkLogo', watermarkLogoFile);
+    }
 
     try {
       await SettingsService.update(formData);
@@ -130,12 +136,14 @@ export default function AdminSettings() {
       setLogoFile(null);
       setFooterLogoFile(null);
       setFaviconFile(null);
+      setWatermarkLogoFile(null);
       // Reload urls from settings context if updated
       const updated = await SettingsService.get();
       if (updated) {
         setLogoUrl(updated.logo || '');
         setFooterLogoUrl(updated.footerLogo || '');
         setFaviconUrl(updated.favicon || '');
+        setWatermarkLogoUrl(updated.watermarkLogo || '');
       }
     } catch (err: any) {
       setErrorMsg(err.response?.data?.message || 'Failed to update settings');
@@ -202,7 +210,7 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1.5">Marketplace Logo File</label>
               <input
@@ -262,6 +270,27 @@ export default function AdminSettings() {
                     height={48}
                     unoptimized={true}
                     className="h-10 w-10 object-contain bg-transparent"
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">PDF Watermark Logo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => e.target.files && setWatermarkLogoFile(e.target.files[0])}
+                className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {watermarkLogoUrl && !watermarkLogoFile && (
+                <div className="mt-3 relative bg-transparent p-2 border border-gray-200 rounded-lg max-w-[200px] overflow-hidden flex items-center justify-center">
+                  <Image
+                    src={watermarkLogoUrl}
+                    alt="Watermark Logo"
+                    width={200}
+                    height={80}
+                    unoptimized={true}
+                    className="h-16 w-auto object-contain bg-transparent"
                   />
                 </div>
               )}

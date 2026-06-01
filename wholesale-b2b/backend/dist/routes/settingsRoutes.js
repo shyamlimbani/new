@@ -13,5 +13,6 @@ router.route('/')
     { name: 'logo', maxCount: 1 },
     { name: 'footerLogo', maxCount: 1 },
     { name: 'favicon', maxCount: 1 },
+    { name: 'watermarkLogo', maxCount: 1 },
 ]), settingsController_1.updateSettings);
 exports.default = router;
