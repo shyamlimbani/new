@@ -33,9 +33,14 @@ function MarketplaceContent() {
   // Frontend Filter States
   const [selectedCategorySlug, setSelectedCategorySlug] = useState<string>('');
   const [sidebarSearch, setSidebarSearch] = useState<string>('');
+  const [globalSearch, setGlobalSearch] = useState(searchParam);
   
   // Sidebar states
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    setGlobalSearch(searchParam);
+  }, [searchParam]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,7 +48,7 @@ function MarketplaceContent() {
       try {
         const [bannersData, productsData] = await Promise.all([
           BannerService.getAll({ active: true }),
-          ProductService.getAll({ search: searchParam }) // Fetch all products for the current global search, no category filter
+          ProductService.getAll() // Fetch all products once, filter on the frontend for instant responsiveness
         ]);
         setBanners(bannersData);
         setAllProducts(productsData);
@@ -54,12 +59,13 @@ function MarketplaceContent() {
       }
     };
     fetchData();
-  }, [searchParam]);
+  }, []);
 
   // Reset all filters
   const handleResetFilters = () => {
     setSelectedCategorySlug('');
     setSidebarSearch('');
+    setGlobalSearch('');
     if (searchParam) {
       router.push('/');
     }
@@ -68,6 +74,7 @@ function MarketplaceContent() {
   // Route updates
   const handleCategoryChange = (slug: string) => {
     setSelectedCategorySlug(slug);
+    setMobileFiltersOpen(false);
     // Remove category from URL if it exists to cleanly move to frontend filtering
     if (categoryParam) {
       const params = new URLSearchParams(searchParams.toString());
@@ -77,12 +84,13 @@ function MarketplaceContent() {
   };
 
   const handleGlobalSearch = (query: string, category: string) => {
+    setGlobalSearch(query);
     const params = new URLSearchParams();
     if (query) params.set('search', query);
     if (category) {
       setSelectedCategorySlug(category);
     }
-    router.push(`/?${params.toString()}`);
+    router.push(`/?${params.toString()}`, { scroll: false });
   };
 
   // Frontend Filtering Logic
@@ -95,10 +103,21 @@ function MarketplaceContent() {
       }
     }
     
+    // Global Header Search Filter
+    if (globalSearch) {
+      const searchLower = globalSearch.trim().toLowerCase();
+      if (searchLower && 
+          !product.name.toLowerCase().includes(searchLower) && 
+          !product.description.toLowerCase().includes(searchLower)) {
+        return false;
+      }
+    }
+    
     // Sidebar Search Filter
     if (sidebarSearch) {
-      const searchLower = sidebarSearch.toLowerCase();
-      if (!product.name.toLowerCase().includes(searchLower) && 
+      const searchLower = sidebarSearch.trim().toLowerCase();
+      if (searchLower && 
+          !product.name.toLowerCase().includes(searchLower) && 
           !product.description.toLowerCase().includes(searchLower)) {
         return false;
       }
@@ -135,7 +154,7 @@ function MarketplaceContent() {
         <section className="flex flex-col lg:flex-row gap-8 w-full items-start">
           
           {/* Left Sidebar Filters */}
-          <div className="w-full lg:w-64 shrink-0 hidden lg:block">
+          <div className="lg:w-64 shrink-0">
             <Sidebar
               selectedCategory={selectedCategorySlug}
               onCategoryChange={handleCategoryChange}

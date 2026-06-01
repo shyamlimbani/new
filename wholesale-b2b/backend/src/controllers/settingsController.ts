@@ -44,6 +44,7 @@ export const updateSettings = asyncWrapper(async (req: Request, res: Response) =
     instagram,
     twitter,
     linkedin,
+    favicon,
   } = req.body;
 
   let settings = await Settings.findOne({});
@@ -68,6 +69,9 @@ export const updateSettings = asyncWrapper(async (req: Request, res: Response) =
   }
   if (footerLogo !== undefined) {
     settings.footerLogo = footerLogo;
+  }
+  if (favicon !== undefined) {
+    settings.favicon = favicon;
   }
 
   if (settings.socialLinks) {
@@ -102,6 +106,15 @@ export const updateSettings = asyncWrapper(async (req: Request, res: Response) =
         console.warn('Cloudinary upload failed for footerLogo, falling back to base64:', err);
         const mimeType = files.footerLogo[0].mimetype || 'image/png';
         settings.footerLogo = `data:${mimeType};base64,${files.footerLogo[0].buffer.toString('base64')}`;
+      }
+    }
+    if (files.favicon && files.favicon[0]) {
+      try {
+        settings.favicon = await uploadToCloudinary(files.favicon[0].buffer, 'settings');
+      } catch (err) {
+        console.warn('Cloudinary upload failed for favicon, falling back to base64:', err);
+        const mimeType = files.favicon[0].mimetype || 'image/png';
+        settings.favicon = `data:${mimeType};base64,${files.favicon[0].buffer.toString('base64')}`;
       }
     }
   }

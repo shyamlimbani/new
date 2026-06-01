@@ -21,7 +21,7 @@ const LinkedinIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function Footer() {
-  const { settings, categories, footerMenus } = useSettings();
+  const { settings, loading, categories, footerMenus } = useSettings();
 
   const socialLinks = settings?.socialLinks || {
     facebook: 'https://facebook.com',
@@ -65,20 +65,19 @@ export default function Footer() {
           {/* Col 1: About, Logo & Socials */}
           <div className="flex flex-col gap-5 md:col-span-2 xl:col-span-2">
             <Link href="/" className="flex items-center gap-2">
-              {settings?.footerLogo ? (
-                <div className="flex items-center justify-start overflow-hidden bg-transparent">
-                  <Image
-                    src={settings.footerLogo}
-                    alt={settings?.websiteName || 'Wholesale B2B'}
-                    width={180}
-                    height={60}
-                    unoptimized={true}
-                    className="h-10 w-auto object-contain bg-transparent brightness-0 invert"
-                  />
-                </div>
+              {loading || !settings ? (
+                <div className="h-[60px] w-[120px] animate-pulse rounded bg-slate-800" />
+              ) : settings.logo ? (
+                <Image
+                  src={settings.logo}
+                  alt="logo"
+                  width={120}
+                  height={60}
+                  unoptimized
+                />
               ) : (
                 <span className="font-extrabold text-xl text-white tracking-tight">
-                  {settings?.websiteName || 'Wholesale B2B'}
+                  {settings.websiteName || 'Wholesale B2B'}
                 </span>
               )}
             </Link>

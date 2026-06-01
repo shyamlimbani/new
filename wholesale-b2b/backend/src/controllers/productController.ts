@@ -7,7 +7,24 @@ import { Readable } from 'stream';
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const { category, search } = req.query;
+    let query: any = {};
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (search) {
+      const cleanSearch = String(search).trim();
+      if (cleanSearch) {
+        query.$or = [
+          { name: { $regex: cleanSearch, $options: 'i' } },
+          { description: { $regex: cleanSearch, $options: 'i' } }
+        ];
+      }
+    }
+
+    const products = await Product.find(query).sort({ createdAt: -1 });
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching products' });

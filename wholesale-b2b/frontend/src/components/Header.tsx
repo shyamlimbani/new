@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import Link from 'next/link';
 import { Menu, X, Search, Grid, ChevronDown, Download, LogIn, LogOut } from 'lucide-react';
@@ -29,10 +29,14 @@ interface HeaderProps {
 }
 
 export default function Header({ onSearch, initialSearch = '', initialCategory = '' }: HeaderProps) {
-  const { settings, categories, navbar, user, logoutUser, setShowLoginPopup } = useSettings();
+  const { settings, loading, categories, navbar, user, logoutUser, setShowLoginPopup } = useSettings();
   const router = useRouter();
 
   const [searchVal, setSearchVal] = useState(initialSearch);
+
+  useEffect(() => {
+    setSearchVal(initialSearch);
+  }, [initialSearch]);
   const [selectedCat, setSelectedCat] = useState(initialCategory);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
@@ -85,24 +89,23 @@ export default function Header({ onSearch, initialSearch = '', initialCategory =
             
             {/* Logo Section */}
             <Link href="/" className="flex items-center gap-2 shrink-0 select-none">
-              {settings?.logo ? (
-                <div className="flex items-center justify-center overflow-hidden bg-transparent">
-                  <Image
-                    src={settings.logo}
-                    alt={settings.websiteName || 'My Website'}
-                    width={180}
-                    height={60}
-                    unoptimized={true}
-                    className="h-10 md:h-14 w-auto object-contain bg-transparent"
-                  />
-                </div>
+              {loading || !settings ? (
+                <div className="h-[60px] w-[120px] animate-pulse rounded bg-slate-200" />
+              ) : settings.logo ? (
+                <Image
+                  src={settings.logo}
+                  alt="logo"
+                  width={120}
+                  height={60}
+                  unoptimized
+                />
               ) : (
                 <div className="flex items-center gap-2">
                   <div className="bg-[#cc3a07] text-white p-2 rounded-xl shadow-sm">
                     <Grid className="w-5 h-5" />
                   </div>
                   <span className="font-bold text-lg sm:text-2xl text-slate-800 tracking-tight">
-                    {settings?.websiteName || 'Wholesale B2B'}
+                    {settings.websiteName || 'Wholesale B2B'}
                   </span>
                 </div>
               )}
@@ -119,7 +122,13 @@ export default function Header({ onSearch, initialSearch = '', initialCategory =
                   type="text"
                   placeholder={searchPlaceholder}
                   value={searchVal}
-                  onChange={(e) => setSearchVal(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSearchVal(val);
+                    if (onSearch) {
+                      onSearch(val, selectedCat);
+                    }
+                  }}
                   className="w-full pl-4 pr-10 py-2.5 text-sm outline-none bg-transparent text-slate-800 placeholder-slate-400 focus:outline-hidden"
                 />
                 {searchVal && (
@@ -264,7 +273,13 @@ export default function Header({ onSearch, initialSearch = '', initialCategory =
                 type="text"
                 placeholder="Search..."
                 value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchVal(val);
+                  if (onSearch) {
+                    onSearch(val, selectedCat);
+                  }
+                }}
                 className="w-full px-4 py-2 text-sm outline-none bg-transparent text-slate-800 placeholder-slate-400 focus:bg-white transition-all"
               />
               <button

@@ -58,6 +58,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (metaDesc) {
           metaDesc.setAttribute('content', data.seoDescription || '');
         }
+        
+        // Dynamic Favicon Update on Client Side
+        const faviconUrl = data.favicon || '/favicon.ico';
+        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = faviconUrl;
       }
     } catch (e) {
       console.error('Failed to load settings', e);

@@ -20,7 +20,21 @@ const csv_parser_1 = __importDefault(require("csv-parser"));
 const stream_1 = require("stream");
 const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const products = yield Product_1.default.find().sort({ createdAt: -1 });
+        const { category, search } = req.query;
+        let query = {};
+        if (category) {
+            query.category = category;
+        }
+        if (search) {
+            const cleanSearch = String(search).trim();
+            if (cleanSearch) {
+                query.$or = [
+                    { name: { $regex: cleanSearch, $options: 'i' } },
+                    { description: { $regex: cleanSearch, $options: 'i' } }
+                ];
+            }
+        }
+        const products = yield Product_1.default.find(query).sort({ createdAt: -1 });
         res.json(products);
     }
     catch (error) {

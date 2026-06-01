@@ -8,10 +8,10 @@ const router = express.Router();
 router.route('/')
   .get(getSettings)
   .put(
-    protect,
     upload.fields([
       { name: 'logo', maxCount: 1 },
       { name: 'footerLogo', maxCount: 1 },
+      { name: 'favicon', maxCount: 1 },
     ]),
     updateSettings
   );

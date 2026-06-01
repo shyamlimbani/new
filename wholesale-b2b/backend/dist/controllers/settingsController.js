@@ -41,7 +41,7 @@ exports.getSettings = (0, asyncWrapper_1.default)((req, res) => __awaiter(void 0
     res.json(settings);
 }));
 exports.updateSettings = (0, asyncWrapper_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { logo, footerLogo, whatsappNumber, websiteName, seoTitle, seoDescription, footerText, footerDescription, contactEmail, contactAddress, facebook, instagram, twitter, linkedin, } = req.body;
+    const { logo, footerLogo, whatsappNumber, websiteName, seoTitle, seoDescription, footerText, footerDescription, contactEmail, contactAddress, facebook, instagram, twitter, linkedin, favicon, } = req.body;
     let settings = yield Settings_1.default.findOne({});
     if (!settings) {
         settings = new Settings_1.default({
@@ -62,6 +62,9 @@ exports.updateSettings = (0, asyncWrapper_1.default)((req, res) => __awaiter(voi
     }
     if (footerLogo !== undefined) {
         settings.footerLogo = footerLogo;
+    }
+    if (favicon !== undefined) {
+        settings.favicon = favicon;
     }
     if (settings.socialLinks) {
         settings.socialLinks.facebook = facebook !== undefined ? facebook : settings.socialLinks.facebook;
@@ -97,6 +100,16 @@ exports.updateSettings = (0, asyncWrapper_1.default)((req, res) => __awaiter(voi
                 console.warn('Cloudinary upload failed for footerLogo, falling back to base64:', err);
                 const mimeType = files.footerLogo[0].mimetype || 'image/png';
                 settings.footerLogo = `data:${mimeType};base64,${files.footerLogo[0].buffer.toString('base64')}`;
+            }
+        }
+        if (files.favicon && files.favicon[0]) {
+            try {
+                settings.favicon = yield (0, cloudinaryUpload_1.uploadToCloudinary)(files.favicon[0].buffer, 'settings');
+            }
+            catch (err) {
+                console.warn('Cloudinary upload failed for favicon, falling back to base64:', err);
+                const mimeType = files.favicon[0].mimetype || 'image/png';
+                settings.favicon = `data:${mimeType};base64,${files.favicon[0].buffer.toString('base64')}`;
             }
         }
     }

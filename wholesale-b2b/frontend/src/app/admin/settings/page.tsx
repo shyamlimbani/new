@@ -43,6 +43,8 @@ export default function AdminSettings() {
   const [logoUrl, setLogoUrl] = useState('');
   const [footerLogoFile, setFooterLogoFile] = useState<File | null>(null);
   const [footerLogoUrl, setFooterLogoUrl] = useState('');
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [faviconUrl, setFaviconUrl] = useState('');
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -60,6 +62,7 @@ export default function AdminSettings() {
           setSeoDescription(data.seoDescription || '');
           setLogoUrl(data.logo || '');
           setFooterLogoUrl(data.footerLogo || '');
+          setFaviconUrl(data.favicon || '');
           
           if (data.socialLinks) {
             setFacebook(data.socialLinks.facebook || '');
@@ -112,6 +115,9 @@ export default function AdminSettings() {
     if (footerLogoFile) {
       formData.append('footerLogo', footerLogoFile);
     }
+    if (faviconFile) {
+      formData.append('favicon', faviconFile);
+    }
 
     try {
       await SettingsService.update(formData);
@@ -123,11 +129,13 @@ export default function AdminSettings() {
       // Clear files
       setLogoFile(null);
       setFooterLogoFile(null);
+      setFaviconFile(null);
       // Reload urls from settings context if updated
       const updated = await SettingsService.get();
       if (updated) {
         setLogoUrl(updated.logo || '');
         setFooterLogoUrl(updated.footerLogo || '');
+        setFaviconUrl(updated.favicon || '');
       }
     } catch (err: any) {
       setErrorMsg(err.response?.data?.message || 'Failed to update settings');
@@ -194,7 +202,7 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1.5">Marketplace Logo File</label>
               <input
@@ -204,7 +212,7 @@ export default function AdminSettings() {
                 className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
               {logoUrl && !logoFile && (
-                <div className="mt-3 relative bg-transparent p-2 border border-gray-200 rounded-lg max-w-xs overflow-hidden flex items-center justify-center">
+                <div className="mt-3 relative bg-transparent p-2 border border-gray-200 rounded-lg max-w-[200px] overflow-hidden flex items-center justify-center">
                   <Image
                     src={logoUrl}
                     alt="Logo"
@@ -225,7 +233,7 @@ export default function AdminSettings() {
                 className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
               {footerLogoUrl && !footerLogoFile && (
-                <div className="mt-3 relative bg-transparent p-2 border border-gray-200 rounded-lg max-w-xs overflow-hidden flex items-center justify-center">
+                <div className="mt-3 relative bg-transparent p-2 border border-gray-200 rounded-lg max-w-[200px] overflow-hidden flex items-center justify-center">
                   <Image
                     src={footerLogoUrl}
                     alt="Footer Logo"
@@ -233,6 +241,27 @@ export default function AdminSettings() {
                     height={80}
                     unoptimized={true}
                     className="h-16 w-auto object-contain bg-transparent"
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">Website Favicon</label>
+              <input
+                type="file"
+                accept=".png,.jpg,.jpeg,.ico,.svg"
+                onChange={(e) => e.target.files && setFaviconFile(e.target.files[0])}
+                className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {faviconUrl && !faviconFile && (
+                <div className="mt-3 relative bg-transparent p-2 border border-gray-200 rounded-lg max-w-[100px] overflow-hidden flex items-center justify-center">
+                  <Image
+                    src={faviconUrl}
+                    alt="Favicon"
+                    width={48}
+                    height={48}
+                    unoptimized={true}
+                    className="h-10 w-10 object-contain bg-transparent"
                   />
                 </div>
               )}

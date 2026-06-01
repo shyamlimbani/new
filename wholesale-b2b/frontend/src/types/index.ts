@@ -66,6 +66,9 @@ export interface Settings {
   footerDescription?: string;
   contactEmail?: string;
   contactAddress?: string;
+  favicon?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Page {
@@ -124,6 +127,7 @@ export interface PopupSetting {
   description: string;
   logo?: string;
   backgroundImage?: string;
+  image?: string;
   buttonText: string;
   termsText: string;
   isEnabled: boolean;
